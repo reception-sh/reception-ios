@@ -1,0 +1,47 @@
+name: BasicExample
+options:
+  developmentLanguage: en
+  knownRegions: [en, de, fr, fr-CA, es, es-419, it, pt-BR, pt-PT, ca, ro, nl, sv, da, nb, fi, pl, cs, sk, hu, sl, hr, el, uk, ru, tr, ja, ko, zh-Hans, zh-Hant, zh-HK, th, vi, id, ms, hi, bn, gu, kn, ml, mr, or, pa, ta, te, ur, ar, he]
+  deploymentTarget:
+    iOS: '17.0'
+packages:
+  Reception:
+    path: ../..
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    SWIFT_STRICT_CONCURRENCY: complete
+    # This example has no App Intents metadata to extract.
+    LM_SKIP_METADATA_EXTRACTION: YES
+    CODE_SIGNING_ALLOWED: YES
+    CODE_SIGN_IDENTITY: "-"
+targets:
+  BasicExample:
+    type: application
+    platform: iOS
+    sources: [BasicExample]
+    info:
+      path: BasicExample/Info.plist
+      properties:
+        CFBundleDisplayName: Basic
+        CFBundleShortVersionString: '1.0'
+        CFBundleVersion: '1'
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.reception.examples.basic
+        TARGETED_DEVICE_FAMILY: '1,2'
+    dependencies:
+      - package: Reception
+schemes:
+  BasicExample:
+    build:
+      targets:
+        BasicExample: all
