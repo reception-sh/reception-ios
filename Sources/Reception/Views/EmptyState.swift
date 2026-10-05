@@ -9,9 +9,12 @@ internal struct EmptyState: View {
         VStack(spacing: Theme.small) {
             let appearance = Reception.resolvedAppearance
             let icon = appearance.welcomeIcon?.icon ?? .symbol("bubble.left.and.bubble.right")
+            let scale = iconSize / Theme.emptyIconSize
+            let radius = appearance.welcomeIconCornerRadius
             if !icon.isHidden {
                 // iconSize carries the Dynamic Type factor for the built-in size.
-                AppearanceIconView(icon: icon, size: iconSize * (appearance.welcomeIconSize ?? Theme.emptyIconSize) / Theme.emptyIconSize)
+                AppearanceIconView(icon: icon, size: (appearance.welcomeIconSize ?? Theme.emptyIconSize) * scale,
+                    imageCornerRadius: (radius.isFinite ? min(max(radius, 0), 80) : 0) * scale)
                     .foregroundStyle(appearance.welcomeIconColor ?? Theme.tertiary)
                     .offset(appearance.welcomeIconOffset)
                     .padding(.bottom, Theme.small)

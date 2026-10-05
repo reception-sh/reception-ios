@@ -27,6 +27,7 @@ internal struct RemoteAppearance: Codable {
         var image: String?
         var color: AdaptiveAppearanceColor?
         var size: Double?
+        var cornerRadius: Double?
         var offset: RemoteOffset?
     }
     struct RemoteOffset: Codable { var x: Double; var y: Double }
@@ -97,6 +98,7 @@ internal struct RemoteAppearance: Codable {
         result.welcomeIconColor = welcomeIcon?.color?.color(fallback: local.welcomeIconColor ?? Color(uiColor: .tertiaryLabel))
             ?? local.welcomeIconColor
         result.welcomeIconSize = welcomeIcon?.size.map { CGFloat(min(max($0, 16), 160)) } ?? local.welcomeIconSize
+        result.welcomeIconCornerRadius = welcomeIcon?.cornerRadius.map { CGFloat(min(max($0, 0), 80)) } ?? local.welcomeIconCornerRadius
         if let offset = welcomeIcon?.offset {
             result.welcomeIconOffset = CGSize(width: min(max(offset.x, -120), 120), height: min(max(offset.y, -120), 120))
         }

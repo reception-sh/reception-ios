@@ -157,4 +157,23 @@ final class AppearanceMergeTests: XCTestCase {
         XCTAssertEqual(result.welcomeIconOffset, .zero)
         XCTAssertEqual(try remote("{}").applying(to: local).welcomeIconOffset, local.welcomeIconOffset)
     }
+
+    func testWelcomeCornerRadiusOverridesIndependentlyAndRestoresLocalValue() throws {
+        var local = localAppearance()
+        local.welcomeIcon = .image(Image(systemName: "star"))
+        local.welcomeIconCornerRadius = 16
+        for (json, expected) in [
+            (#"{"welcomeIcon":{"cornerRadius":0}}"#, CGFloat(0)),
+            (#"{"welcomeIcon":{"cornerRadius":24}}"#, CGFloat(24)),
+            (#"{"welcomeIcon":{"size":80}}"#, CGFloat(16)),
+            ("{}", CGFloat(16)),
+        ] {
+            let result = try remote(json).applying(to: local)
+            XCTAssertEqual(result.welcomeIconCornerRadius, expected)
+            guard case .local = result.welcomeIcon?.icon else { return XCTFail("radius replaced the image") }
+        }
+        XCTAssertEqual(local.welcomeIconCornerRadius, 16)
+        XCTAssertEqual(Reception.Appearance().welcomeIconCornerRadius, 0)
+    }
+
 }

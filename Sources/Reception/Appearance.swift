@@ -51,6 +51,9 @@ extension Reception {
         public var welcomeIconColor: Color?
         /// Points before Dynamic Type scaling. Defaults to nil, using the built-in 44 points.
         public var welcomeIconSize: CGFloat?
+        /// Welcome image corner radius in points before Dynamic Type scaling (0–80). Defaults to 0.
+        /// Applies to local and remote images, not symbols; capped at half the image's shortest edge.
+        public var welcomeIconCornerRadius: CGFloat = 0
         /// Defaults to .zero. Moves the icon from its centered position without moving the welcome text.
         public var welcomeIconOffset = CGSize.zero
         /// Defaults to false.
