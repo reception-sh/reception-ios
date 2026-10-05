@@ -9,7 +9,8 @@ internal struct ChatContent: View {
     var body: some View {
         ChatHistory(model: model)
         .background(Theme.background)
-        .navigationTitle(Reception.resolvedAppearance.title)
+        // iOS draws the navigation title in place of a hidden principal title.
+        .navigationTitle(Reception.resolvedAppearance.hidesTitle ? "" : Reception.resolvedAppearance.title)
         .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
         .tint(Reception.resolvedAppearance.accentColor)

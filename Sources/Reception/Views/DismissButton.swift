@@ -14,8 +14,10 @@ internal struct DismissButton: View {
 
     private var glyph: some View {
         Group {
-            if !lightbox, let image = Reception.resolvedAppearance.closeImage {
-                AppearanceIconView(icon: .image(image), size: Theme.dismissImageSize)
+            if !lightbox, let url = Reception.resolvedAppearance.remoteCloseImage {
+                AppearanceIconView(icon: .image(url), size: Theme.dismissImageSize)
+            } else if !lightbox, let image = Reception.resolvedAppearance.closeImage {
+                AppearanceIconView(icon: .local(image), size: Theme.dismissImageSize)
             } else {
                 Image(systemName: lightbox ? "xmark" : Reception.resolvedAppearance.closeIcon.rawValue)
                     .imageScale(.medium)

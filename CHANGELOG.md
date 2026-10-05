@@ -3,6 +3,20 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `welcomeIcon` with `Reception.WelcomeIcon` (`.symbol(_:)`, `.image(_:)`, `.hidden`), plus `welcomeIconColor`, `welcomeIconSize` and `welcomeIconOffset`, so the welcome icon can use an image bundled with your app.
+- `hidesTitle`, `hidesWelcomeTitle` and `hidesWelcomeText`.
+- `closeImage` for a close button image bundled with your app.
+
+### Fixed
+
+- A hidden chat title no longer reappears as plain navigation title text.
+- Published visibility can show or hide elements independently of local appearance; unset visibility keeps the app's setting.
+- A published close symbol overrides a local close image, and a published font design overrides a local custom font.
+
 ## [1.0.0] — 2026-10-01
 
 First public release.

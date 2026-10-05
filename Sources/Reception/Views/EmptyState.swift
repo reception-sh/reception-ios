@@ -8,8 +8,8 @@ internal struct EmptyState: View {
     var body: some View {
         VStack(spacing: Theme.small) {
             let appearance = Reception.resolvedAppearance
-            let icon = appearance.welcomeIcon ?? .symbol("bubble.left.and.bubble.right")
-            if icon != .hidden {
+            let icon = appearance.welcomeIcon?.icon ?? .symbol("bubble.left.and.bubble.right")
+            if !icon.isHidden {
                 // iconSize carries the Dynamic Type factor for the built-in size.
                 AppearanceIconView(icon: icon, size: iconSize * (appearance.welcomeIconSize ?? Theme.emptyIconSize) / Theme.emptyIconSize)
                     .foregroundStyle(appearance.welcomeIconColor ?? Theme.tertiary)

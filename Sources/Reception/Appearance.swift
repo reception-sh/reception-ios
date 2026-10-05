@@ -34,29 +34,36 @@ extension Reception {
         public var preferredColorScheme: ColorScheme?
         /// Defaults to .xmark.
         public var closeIcon: CloseIcon = .xmark
+        /// Defaults to nil, using closeIcon. An image such as `Image("Close")`, drawn in its own colors.
+        public var closeImage: Image?
         /// Defaults to nil, using the default system font design.
         public var fontDesign: Font.Design?
-        /// Defaults to nil (system font); a registered font name overrides fontDesign.
+        /// Defaults to nil (system font); a registered font name overrides local fontDesign.
+        /// An explicit dashboard font design uses that system font instead.
         /// Reuse the exact font/PostScript name working in the host's Font.custom or UIFont(name:size:).
         /// Display labels, filenames and family names can differ; UIFont.fontNames(forFamilyName:) lists valid names.
         public var fontFamily: String?
         /// Defaults to true, fading older outgoing messages.
         public var fadesOlderMessages = true
+        /// Defaults to nil, using the built-in chat bubbles symbol.
+        public var welcomeIcon: WelcomeIcon?
+        /// Defaults to nil, using the tertiary label color. Applies to symbols, not images.
+        public var welcomeIconColor: Color?
+        /// Points before Dynamic Type scaling. Defaults to nil, using the built-in 44 points.
+        public var welcomeIconSize: CGFloat?
+        /// Defaults to .zero. Moves the icon from its centered position without moving the welcome text.
+        public var welcomeIconOffset = CGSize.zero
+        /// Defaults to false.
+        public var hidesTitle = false
+        /// Defaults to false.
+        public var hidesWelcomeTitle = false
+        /// Defaults to false.
+        public var hidesWelcomeText = false
 
         // Remote-only settings from the dashboard's published appearance.
         internal var showsTeamPhotos = false
         internal var showsTeamNames = false
-        /// nil keeps the built-in icon.
-        internal var welcomeIcon: AppearanceIcon?
-        internal var welcomeIconColor: Color?
-        /// Points before Dynamic Type scaling; nil keeps the built-in size.
-        internal var welcomeIconSize: CGFloat?
-        /// Visual offset from the centered position; it does not move the welcome text.
-        internal var welcomeIconOffset = CGSize.zero
-        internal var hidesTitle = false
-        internal var hidesWelcomeTitle = false
-        internal var hidesWelcomeText = false
-        internal var closeImage: URL?
+        internal var remoteCloseImage: URL?
         internal var reviewCard = CardStyle()
         internal var offerCard = CardStyle()
 
