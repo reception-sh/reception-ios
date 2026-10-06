@@ -15,6 +15,7 @@ The examples connect to the hosted Reception service. Replace `app_YOUR_APP_ID` 
 To test against a local backend, call `Reception.configure(appId:serviceURL:)` from `@_spi(ReceptionTesting) import Reception` in a Debug build instead of `configure(appId:)`, and allow local networking in the test app's App Transport Security settings. Release builds don't contain this call.
 
 The setup check runs in Debug simulator builds: launch the app with `-ReceptionSetupCheck <App ID>` and read the `com.reception.sdk` / `SetupCheck` log lines. It sends one real message.
+Launch with `-ReceptionPreview welcome` or `-ReceptionPreview conversation` to open the chat with local example data for screenshots; it sends and saves nothing.
 
 Build all three examples for an available simulator and verify that each Support entry presents the SDK-owned sheet. Manually verify message delivery against the hosted service when required by AGENTS.md. Report actual build results and observed behavior, or the precise reason a check was not run.
 
@@ -23,7 +24,7 @@ Build all three examples for an available simulator and verify that each Support
 `setPushToken(_:)` uses APNs sandbox automatically on the simulator. The host still needs
 push capability, notification permission through its existing flow, and a real APNs token.
 Use an APNs-capable simulator on supported Mac hardware and configure matching sandbox
-credentials in the dashboard. SDK 1.0.0 requires an explicit `.sandbox` override.
+credentials in the dashboard.
 
 Verify actual receipt after an APNs request; a successful chat setup check or `simctl push`
 only verifies its own path. Before shipping, also test push on a physical iPhone. Do not log tokens.

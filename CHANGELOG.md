@@ -5,13 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-10-06
+
 ### Added
 
 - `welcomeIconCornerRadius` rounds local and uploaded welcome images, with an optional dashboard override. Symbols are unchanged.
-
 - `welcomeIcon` with `Reception.WelcomeIcon` (`.symbol(_:)`, `.image(_:)`, `.hidden`), plus `welcomeIconColor`, `welcomeIconSize` and `welcomeIconOffset`, so the welcome icon can use an image bundled with your app.
 - `hidesTitle`, `hidesWelcomeTitle` and `hidesWelcomeText`.
 - `closeImage` for a close button image bundled with your app.
+- `-ReceptionPreview welcome` and `-ReceptionPreview conversation` launch arguments open the chat with local example data in Debug simulator builds, so coding agents can screenshot it without tapping. They send and save nothing.
 
 ### Fixed
 

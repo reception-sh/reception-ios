@@ -21,7 +21,7 @@ public final class Reception {
         get { Log.handler }
         set { Log.handler = newValue }
     }
-    /// Version of the SDK, for example "1.0.0". Sent with device registration and updates.
+    /// Version of the SDK, for example "1.1.0". Sent with device registration and updates.
     nonisolated public static var version: String { SDKVersion.current }
 
     public static let shared = Reception()
@@ -176,6 +176,7 @@ public final class Reception {
         Log.info("Configured, SDK \(version)")
         #if DEBUG && targetEnvironment(simulator)
         SetupCheck.startIfRequested(configuredAppId: appId)
+        ChatPreview.startIfRequested()
         #endif
     }
     public func setPushToken(_ token: Data, environment: PushEnvironment = .automatic) {
@@ -348,6 +349,10 @@ public final class Reception {
         unreadMonitor.reschedule()
         chat?.startStream()
     }
+
+    #if DEBUG && targetEnvironment(simulator)
+    internal func usePreviewChat(_ model: ChatModel) { chat = model }
+    #endif
 
     internal func chatModel() -> ChatModel {
         if let chat { return chat }
