@@ -1,16 +1,16 @@
 import SwiftUI
 
-/// A reply author's photo, or their initial while it loads or when they have none.
+/// Keeps a neutral placeholder until the author is known, then their initial until the photo loads.
 internal struct TeamAvatar: View {
-    let member: TeamMember
+    let member: TeamMember?
     @ScaledMetric(relativeTo: .body) private var size = Theme.avatarSize
 
     var body: some View {
-        AsyncImage(url: member.photoUrl) { phase in
+        AsyncImage(url: member?.photoUrl) { phase in
             if let image = phase.image {
                 image.resizable().scaledToFill()
             } else {
-                Text(member.name.prefix(1).uppercased())
+                Text(member.map { String($0.name.prefix(1)).uppercased() } ?? "")
                     .font(Theme.captionFont.weight(.semibold))
                     .foregroundStyle(Theme.muted)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -19,25 +19,21 @@ internal struct MessageRow: View {
                     .font(Theme.timestampFont).foregroundStyle(Theme.muted)
                     .frame(maxWidth: .infinity)
             }
-            if let author = layout.author {
-                VStack(alignment: .leading, spacing: Theme.authorNameSpacing) {
-                    if layout.showsAuthorName {
-                        Text(author.name)
-                            .font(Theme.timestampFont).foregroundStyle(Theme.muted)
-                            .padding(.leading, (layout.reservesPhotoColumn ? avatarSize + Theme.small : Theme.zero) + Theme.bubbleHorizontal)
-                    }
-                    if layout.reservesPhotoColumn {
-                        HStack(alignment: .bottom, spacing: Theme.small) {
-                            if layout.showsAuthorPhoto { TeamAvatar(member: author) }
-                            else { Color.clear.frame(width: avatarSize, height: Theme.zero) }
-                            bubble(width: availableWidth - avatarSize - Theme.small)
-                        }
-                    } else {
-                        bubble(width: availableWidth)
-                    }
+            VStack(alignment: .leading, spacing: Theme.authorNameSpacing) {
+                if layout.showsAuthorName, let author = layout.author {
+                    Text(author.name)
+                        .font(Theme.timestampFont).foregroundStyle(Theme.muted)
+                        .padding(.leading, (layout.reservesPhotoColumn ? avatarSize + Theme.small : Theme.zero) + Theme.bubbleHorizontal)
                 }
-            } else {
-                bubble(width: availableWidth)
+                if layout.reservesPhotoColumn {
+                    HStack(alignment: .bottom, spacing: Theme.small) {
+                        if layout.showsAuthorPhoto { TeamAvatar(member: layout.author) }
+                        else { Color.clear.frame(width: avatarSize, height: Theme.zero) }
+                        bubble(width: availableWidth - avatarSize - Theme.small)
+                    }
+                } else {
+                    bubble(width: availableWidth)
+                }
             }
         }
         .padding(.top, layout.spacing)

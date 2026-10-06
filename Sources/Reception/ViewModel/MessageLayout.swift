@@ -9,7 +9,7 @@ internal struct MessageLayout {
     var author: TeamMember?
     var showsAuthorName = false
     var showsAuthorPhoto = false
-    /// Replies in a run keep the photo column so bubbles stay aligned under the photo.
+    /// Reserve space even before team details arrive, keeping cached replies aligned.
     var reservesPhotoColumn = false
 }
 
@@ -25,6 +25,7 @@ extension ChatModel {
         let appearance = Reception.resolvedAppearance
         let showsAuthors = appearance.showsTeamNames || appearance.showsTeamPhotos
         let author = message.sender == "USER" || !showsAuthors ? nil : message.authorId.flatMap { team[$0] }
+        let reservesPhotoColumn = message.sender == "AGENT" && appearance.showsTeamPhotos
         return MessageLayout(
             showsDeliveryStatus: index == messages.lastIndex(where: { $0.sender == "USER" }),
             showsTimestamp: startsGroup && (previous.map {
@@ -36,8 +37,8 @@ extension ChatModel {
             spacing: previous == nil ? Theme.zero : (startsGroup ? Theme.groupSpacing : Theme.groupedSpacing),
             author: author,
             showsAuthorName: author != nil && appearance.showsTeamNames && startsGroup,
-            showsAuthorPhoto: author != nil && appearance.showsTeamPhotos && (next.map { !sameGroup(message, $0) } ?? true),
-            reservesPhotoColumn: author != nil && appearance.showsTeamPhotos
+            showsAuthorPhoto: reservesPhotoColumn && (next.map { !sameGroup(message, $0) } ?? true),
+            reservesPhotoColumn: reservesPhotoColumn
         )
     }
 

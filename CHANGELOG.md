@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Replies reserve their avatar space while team details and photos load, preventing horizontal layout jumps when team photos are enabled.
 - Automatic push environment detection now selects APNs sandbox on the simulator instead of ignoring its token. Physical-device detection is unchanged.
 - A hidden chat title no longer reappears as plain navigation title text.
 - Published visibility can show or hide elements independently of local appearance; unset visibility keeps the app's setting.
