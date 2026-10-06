@@ -5,11 +5,15 @@ import Network
 @MainActor @Observable
 internal final class ChatModel {
     var messages: [Message] = []
-    /// Reply authors by ID. Each opening replaces it, so photo URLs stay fresh; kept in memory only.
+    /// Fresh reply authors and signed URLs; cached display details are restored separately.
     var team: [String: TeamMember] = [:] {
-        didSet { teamPhotos.update(Reception.resolvedAppearance.showsTeamPhotos ? team : [:]) }
+        didSet {
+            let appearance = Reception.resolvedAppearance
+            teamProfiles.update(appearance.showsTeamNames || appearance.showsTeamPhotos ? team : [:],
+                                showsPhotos: appearance.showsTeamPhotos)
+        }
     }
-    let teamPhotos: TeamPhotos
+    let teamProfiles: TeamProfiles
     var sendingDisabled = false
     /// The app accepts only verified users and this session is not one; kept in memory only.
     var verificationRequired = false
@@ -51,7 +55,7 @@ internal final class ChatModel {
 
     init(session: DeviceSession?) {
         self.session = session
-        teamPhotos = TeamPhotos(cache: session?.store.teamPhotoCache)
+        teamProfiles = TeamProfiles(cache: session?.store.teamProfileCache)
         composer = ComposerModel(store: session?.store)
         messages = session?.store.chatCache.load() ?? []
         // Interrupted submissions use the same serial recovery path, after history reconciliation.

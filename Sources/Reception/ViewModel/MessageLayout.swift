@@ -25,7 +25,7 @@ extension ChatModel {
         let next = messages.indices.contains(index + 1) ? messages[index + 1] : nil
         let appearance = Reception.resolvedAppearance
         let showsAuthors = appearance.showsTeamNames || appearance.showsTeamPhotos
-        let author = message.sender == "USER" || !showsAuthors ? nil : message.authorId.flatMap { team[$0] }
+        let author = message.sender == "USER" || !showsAuthors ? nil : message.authorId.flatMap { team[$0] ?? teamProfiles.members[$0] }
         let reservesPhotoColumn = message.sender == "AGENT" && appearance.showsTeamPhotos
         return MessageLayout(
             showsDeliveryStatus: index == messages.lastIndex(where: { $0.sender == "USER" }),
@@ -37,7 +37,7 @@ extension ChatModel {
             }.count,
             spacing: previous == nil ? Theme.zero : (startsGroup ? Theme.groupSpacing : Theme.groupedSpacing),
             author: author,
-            authorPhoto: appearance.showsTeamPhotos ? message.authorId.flatMap { teamPhotos.images[$0] } : nil,
+            authorPhoto: appearance.showsTeamPhotos ? message.authorId.flatMap { teamProfiles.images[$0] } : nil,
             showsAuthorName: author != nil && appearance.showsTeamNames && startsGroup,
             showsAuthorPhoto: reservesPhotoColumn && (next.map { !sameGroup(message, $0) } ?? true),
             reservesPhotoColumn: reservesPhotoColumn

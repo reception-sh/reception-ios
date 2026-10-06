@@ -3,10 +3,11 @@ import Foundation
 
 /// Small, session-scoped snapshots without signed download URLs; excluded from backups.
 @MainActor
-internal final class TeamPhotoCache {
-    struct Entry: Codable {
-        let photoId: String
-        let data: Data
+internal final class TeamProfileCache {
+    struct Entry: Codable, Equatable {
+        var name: String?
+        var photoId: String?
+        var data: Data?
     }
     private let file: URL?
     private var entries: [String: Entry] = [:]
@@ -29,17 +30,22 @@ internal final class TeamPhotoCache {
 
     func save(_ data: Data, photoId: String, memberId: String) {
         guard acceptsWrites, data.count <= 512 * 1024,
-              entries.filter({ $0.key != memberId }).values.reduce(data.count, { $0 + $1.data.count }) <= 6 * 1024 * 1024,
+              entries.filter({ $0.key != memberId }).values.reduce(data.count, { $0 + ($1.data?.count ?? 0) }) <= 6 * 1024 * 1024,
               entries[memberId] != nil || entries.count < 50 else { return }
-        entries[memberId] = Entry(photoId: photoId, data: data)
+        entries[memberId] = Entry(name: entries[memberId]?.name, photoId: photoId, data: data)
         persist()
     }
 
-    func retain(_ ids: Set<String>) {
+    func update(_ team: [String: TeamMember], showsPhotos: Bool) {
         guard acceptsWrites else { return }
-        let retained = entries.filter { ids.contains($0.key) }
-        guard retained.count != entries.count else { return }
-        entries = retained
+        var updated: [String: Entry] = [:]
+        for id in team.keys.sorted().prefix(50) {
+            guard let member = team[id] else { continue }
+            let photo = showsPhotos && member.photoId != nil ? entries[id] : nil
+            updated[id] = Entry(name: member.name, photoId: photo?.photoId, data: photo?.data)
+        }
+        guard updated != entries else { return }
+        entries = updated
         persist()
     }
 

@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Team names restore alongside cached photos before the first network response, including when only names are enabled. Refreshed names and removed members update the same session-scoped cache.
 - Previously loaded team photos appear immediately after app restarts from a bounded, session-scoped disk cache. Photo removal, chat resets, logout and data deletion clear the relevant cached photos.
 - Team photos stay in memory across chat openings, reuse unchanged photos when signed links refresh, and replace changed photos without flashing the placeholder. Removed photos are cleared when team details refresh.
 - Replies reserve their avatar space while team details and photos load, preventing horizontal layout jumps when team photos are enabled.

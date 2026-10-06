@@ -1,9 +1,10 @@
 import UIKit
 import Observation
 
-/// Shows cached photos immediately, then refreshes them from authoritative team details.
+/// Restores names and photos together, then refreshes them from authoritative team details.
 @MainActor @Observable
-internal final class TeamPhotos {
+internal final class TeamProfiles {
+    private(set) var members: [String: TeamMember] = [:]
     private(set) var images: [String: UIImage] = [:]
     @ObservationIgnored private var loadedKeys: [String: String] = [:]
     private struct Pending: Sendable {
@@ -14,13 +15,16 @@ internal final class TeamPhotos {
     }
     @ObservationIgnored private var pending: [String: Pending] = [:]
     private let session: URLSession
-    private let cache: TeamPhotoCache?
+    private let cache: TeamProfileCache?
 
-    init(session: URLSession = .shared, cache: TeamPhotoCache? = nil) {
+    init(session: URLSession = .shared, cache: TeamProfileCache? = nil) {
         self.session = session
         self.cache = cache
         for (id, entry) in cache?.load() ?? [:] {
-            if let image = UIImage(data: entry.data) {
+            if let name = entry.name {
+                members[id] = TeamMember(id: id, name: name, photoUrl: nil, photoId: entry.photoId)
+            }
+            if let data = entry.data, let image = UIImage(data: data) {
                 images[id] = image
                 loadedKeys[id] = entry.photoId
             }
@@ -29,14 +33,16 @@ internal final class TeamPhotos {
 
     deinit { for request in pending.values { request.task.cancel() } }
 
-    func update(_ team: [String: TeamMember]) {
-        cache?.retain(Set(team.values.filter { $0.photoId != nil }.map(\.id)))
-        for id in Set(images.keys).union(pending.keys) where team[id]?.photoId == nil && team[id]?.photoUrl == nil {
+    func update(_ team: [String: TeamMember], showsPhotos: Bool = true) {
+        members = team
+        cache?.update(team, showsPhotos: showsPhotos)
+        let photos = showsPhotos ? team : [:]
+        for id in Set(images.keys).union(pending.keys) where photos[id]?.photoId == nil && photos[id]?.photoUrl == nil {
             pending.removeValue(forKey: id)?.task.cancel()
             images[id] = nil
             loadedKeys[id] = nil
         }
-        for (id, member) in team {
+        for (id, member) in photos {
             guard let url = member.photoUrl else { continue }
             // Older servers have no photo ID; the full URL remains a safe fallback.
             let key = member.photoId ?? url.absoluteString
