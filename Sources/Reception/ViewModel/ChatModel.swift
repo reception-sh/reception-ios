@@ -9,7 +9,7 @@ internal final class ChatModel {
     var team: [String: TeamMember] = [:] {
         didSet { teamPhotos.update(Reception.resolvedAppearance.showsTeamPhotos ? team : [:]) }
     }
-    let teamPhotos = TeamPhotos()
+    let teamPhotos: TeamPhotos
     var sendingDisabled = false
     /// The app accepts only verified users and this session is not one; kept in memory only.
     var verificationRequired = false
@@ -51,6 +51,7 @@ internal final class ChatModel {
 
     init(session: DeviceSession?) {
         self.session = session
+        teamPhotos = TeamPhotos(cache: session?.store.teamPhotoCache)
         composer = ComposerModel(store: session?.store)
         messages = session?.store.chatCache.load() ?? []
         // Interrupted submissions use the same serial recovery path, after history reconciliation.

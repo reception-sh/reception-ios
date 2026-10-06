@@ -13,10 +13,12 @@ internal final class DeviceStore {
     private let credentialStorage: CredentialStorage
     private var acceptsDrafts = true
     let chatCache: ChatCache
+    let teamPhotoCache: TeamPhotoCache
     init(scope: String, credentialStorage: CredentialStorage = CredentialStorage()) {
         self.scope = scope
         self.credentialStorage = credentialStorage
         chatCache = ChatCache(scope: scope)
+        teamPhotoCache = TeamPhotoCache(scope: scope)
     }
 
     var chatRevision: Int {
@@ -29,6 +31,7 @@ internal final class DeviceStore {
     func resetChat(revision: Int) {
         acceptsDrafts = false
         chatCache.clear()
+        teamPhotoCache.clear()
         for name in ["cursor", "draftText", "hasConversation", "hasStartedChat",
                      "conversationStatus", "lastMessageAt", "pushActive", "unreadPolling", "pendingActionClicks"] { defaults?.removeObject(forKey: key(name)) }
         chatRevision = revision
@@ -138,6 +141,7 @@ internal final class DeviceStore {
         // A new namespace prevents reuse even when a locked Keychain refuses deletion.
         _ = credentialStorage.delete(key("session"))
         chatCache.clear()
+        teamPhotoCache.clear()
         for name in ["chatRevision", "cursor", "pending", "draftText", "hasConversation", "hasStartedChat",
                      "conversationStatus", "lastMessageAt", "pushActive", "unreadPolling", "pendingActionClicks",
                      "cooldowns", "lastLimitCheck"] { defaults?.removeObject(forKey: key(name)) }

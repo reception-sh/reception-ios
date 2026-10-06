@@ -84,4 +84,40 @@ final class TeamPhotosTests: XCTestCase {
         let current = try JSONDecoder().decode(TeamMember.self, from: Data(#"{"id":"agent","name":"Alex","photoUrl":null,"photoId":"photo-1"}"#.utf8))
         XCTAssertEqual(current.photoId, "photo-1")
     }
+
+    func testDiskCacheRestoresWithoutNetworkAndRemovalPersists() async throws {
+        let scope = UUID().uuidString
+        let cache = TeamPhotoCache(scope: scope)
+        defer { cache.clear(); StubURLProtocol.uninstall() }
+        let data = try imageData(.red)
+        StubURLProtocol.install { _ in .init(data: data) }
+        let photos = TeamPhotos(cache: cache)
+        photos.update(["agent": try member("photo-1")])
+        try await waitUntil { photos.images["agent"] != nil }
+        let restored = TeamPhotos(cache: TeamPhotoCache(scope: scope))
+        XCTAssertNotNil(restored.images["agent"], "Restoration must be synchronous, before any team response")
+        restored.update(["agent": try member("photo-1", link: "new-signature")])
+        XCTAssertEqual(StubURLProtocol.requests.count, 1)
+        XCTAssertTrue(TeamPhotos(cache: TeamPhotoCache(scope: UUID().uuidString)).images.isEmpty)
+        restored.update(["agent": try member(nil)])
+        XCTAssertTrue(TeamPhotos(cache: TeamPhotoCache(scope: scope)).images.isEmpty)
+    }
+
+    func testClearedStoreRejectsLateDownloadWrites() async throws {
+        let scope = UUID().uuidString
+        let store = DeviceStore(scope: scope, credentialStorage: .init(
+            read: { _ in .missing }, save: { _, _ in true }, delete: { _ in true }))
+        let data = try imageData(.blue)
+        let gate = StubURLProtocol.Gate()
+        StubURLProtocol.install { _ in .init(data: data, gate: gate) }
+        defer { gate.release(); store.clear(); StubURLProtocol.uninstall() }
+        let photos = TeamPhotos(cache: store.teamPhotoCache)
+        photos.update(["agent": try member("photo-1")])
+        try await waitUntil { StubURLProtocol.requests.count == 1 }
+        store.clear()
+        gate.release()
+        try await waitUntil { photos.images["agent"] != nil }
+        XCTAssertTrue(TeamPhotoCache(scope: scope).load().isEmpty)
+    }
+
 }

@@ -1,7 +1,7 @@
 import UIKit
 import Observation
 
-/// Keeps only the current team's photos in memory for the lifetime of the chat model.
+/// Shows cached photos immediately, then refreshes them from authoritative team details.
 @MainActor @Observable
 internal final class TeamPhotos {
     private(set) var images: [String: UIImage] = [:]
@@ -14,12 +14,23 @@ internal final class TeamPhotos {
     }
     @ObservationIgnored private var pending: [String: Pending] = [:]
     private let session: URLSession
+    private let cache: TeamPhotoCache?
 
-    init(session: URLSession = .shared) { self.session = session }
+    init(session: URLSession = .shared, cache: TeamPhotoCache? = nil) {
+        self.session = session
+        self.cache = cache
+        for (id, entry) in cache?.load() ?? [:] {
+            if let image = UIImage(data: entry.data) {
+                images[id] = image
+                loadedKeys[id] = entry.photoId
+            }
+        }
+    }
 
     deinit { for request in pending.values { request.task.cancel() } }
 
     func update(_ team: [String: TeamMember]) {
+        cache?.retain(Set(team.values.filter { $0.photoId != nil }.map(\.id)))
         for id in Set(images.keys).union(pending.keys) where team[id]?.photoId == nil && team[id]?.photoUrl == nil {
             pending.removeValue(forKey: id)?.task.cancel()
             images[id] = nil
@@ -50,6 +61,7 @@ internal final class TeamPhotos {
                           let image = UIImage(data: data) else { return }
                     self.images[id] = image
                     self.loadedKeys[id] = key
+                    if let photoId = member.photoId { self.cache?.save(data, photoId: photoId, memberId: id) }
                 } catch {
                     if self?.pending[id]?.id == attempt { self?.pending[id] = nil }
                 }
