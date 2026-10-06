@@ -27,7 +27,7 @@ internal struct MessageRow: View {
                 }
                 if layout.reservesPhotoColumn {
                     HStack(alignment: .bottom, spacing: Theme.small) {
-                        if layout.showsAuthorPhoto { TeamAvatar(member: layout.author) }
+                        if layout.showsAuthorPhoto { TeamAvatar(member: layout.author, image: layout.authorPhoto) }
                         else { Color.clear.frame(width: avatarSize, height: Theme.zero) }
                         bubble(width: availableWidth - avatarSize - Theme.small)
                     }

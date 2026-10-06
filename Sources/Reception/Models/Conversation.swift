@@ -12,6 +12,7 @@ internal struct TeamMember: Decodable, Equatable {
     let id: String
     let name: String
     let photoUrl: URL?
+    var photoId: String? = nil
 }
 
 internal struct ConversationResponse: Decodable {

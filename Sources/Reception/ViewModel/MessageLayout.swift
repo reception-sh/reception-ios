@@ -7,6 +7,7 @@ internal struct MessageLayout {
     let spacing: CGFloat
     /// Set for agent replies whose author is known while the app shows team names or photos.
     var author: TeamMember?
+    var authorPhoto: UIImage?
     var showsAuthorName = false
     var showsAuthorPhoto = false
     /// Reserve space even before team details arrive, keeping cached replies aligned.
@@ -36,6 +37,7 @@ extension ChatModel {
             }.count,
             spacing: previous == nil ? Theme.zero : (startsGroup ? Theme.groupSpacing : Theme.groupedSpacing),
             author: author,
+            authorPhoto: appearance.showsTeamPhotos ? author.flatMap { teamPhotos.images[$0.id] } : nil,
             showsAuthorName: author != nil && appearance.showsTeamNames && startsGroup,
             showsAuthorPhoto: reservesPhotoColumn && (next.map { !sameGroup(message, $0) } ?? true),
             reservesPhotoColumn: reservesPhotoColumn

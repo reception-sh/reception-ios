@@ -13,6 +13,7 @@ final class StubURLProtocol: URLProtocol {
     struct Reply: Sendable {
         var status = 200
         var body = "{}"
+        var data: Data?
         var headers: [String: String] = [:]
         var delay: TimeInterval = 0
         var gate: Gate?
@@ -85,7 +86,7 @@ final class StubURLProtocol: URLProtocol {
         let deliver = { [client] in
             guard !self.stopped.withLock({ $0 }) else { return }
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-            client?.urlProtocol(self, didLoad: Data(reply.body.utf8))
+            client?.urlProtocol(self, didLoad: reply.data ?? Data(reply.body.utf8))
             client?.urlProtocolDidFinishLoading(self)
         }
         if let gate = reply.gate {

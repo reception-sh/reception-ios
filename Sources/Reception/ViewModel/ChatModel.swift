@@ -6,7 +6,10 @@ import Network
 internal final class ChatModel {
     var messages: [Message] = []
     /// Reply authors by ID. Each opening replaces it, so photo URLs stay fresh; kept in memory only.
-    var team: [String: TeamMember] = [:]
+    var team: [String: TeamMember] = [:] {
+        didSet { teamPhotos.update(Reception.resolvedAppearance.showsTeamPhotos ? team : [:]) }
+    }
+    let teamPhotos = TeamPhotos()
     var sendingDisabled = false
     /// The app accepts only verified users and this session is not one; kept in memory only.
     var verificationRequired = false
@@ -126,7 +129,7 @@ internal final class ChatModel {
                       UIApplication.shared.applicationState == .active else { return }
                 guard generation == Reception.shared.readGeneration else { reloadAfterStaleGet(); return }
                 if let device = response.device { updateSendingPermission(device, revision: permissionRevision) }
-                for member in response.team ?? [] where team[member.id] == nil { team[member.id] = member }
+                team.merge((response.team ?? []).map { ($0.id, $0) }) { _, latest in latest }
                 withAnimation(Theme.messageAnimation) { merge(response.messages) }
                 try await markRead(target: processedReadTarget(
                     conversationId: response.conversation?.id, hasConversation: response.conversation != nil,

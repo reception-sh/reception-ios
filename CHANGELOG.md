@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Team photos stay in memory across chat openings, reuse unchanged photos when signed links refresh, and replace changed photos without flashing the placeholder. Removed photos are cleared when team details refresh.
 - Replies reserve their avatar space while team details and photos load, preventing horizontal layout jumps when team photos are enabled.
 - Automatic push environment detection now selects APNs sandbox on the simulator instead of ignoring its token. Physical-device detection is unchanged.
 - A hidden chat title no longer reappears as plain navigation title text.
