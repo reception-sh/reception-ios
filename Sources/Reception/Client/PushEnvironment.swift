@@ -1,7 +1,7 @@
 import Foundation
 
 extension Reception {
-    /// `automatic` reads `aps-environment` from the embedded provisioning profile.
+    /// `automatic` uses sandbox on the simulator and reads `aps-environment` from the provisioning profile on devices.
     /// Use `sandbox` or `production` to override detection when it is unavailable for the host.
     public enum PushEnvironment: Sendable {
         case automatic, sandbox, production
@@ -12,7 +12,7 @@ extension Reception {
             case .production: return "PRODUCTION"
             case .automatic:
                 #if targetEnvironment(simulator)
-                return nil
+                return "SANDBOX"
                 #else
                 guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision") else {
                     return "PRODUCTION"

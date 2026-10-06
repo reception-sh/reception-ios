@@ -18,6 +18,16 @@ The setup check runs in Debug simulator builds: launch the app with `-ReceptionS
 
 Build all three examples for an available simulator and verify that each Support entry presents the SDK-owned sheet. Manually verify message delivery against the hosted service when required by AGENTS.md. Report actual build results and observed behavior, or the precise reason a check was not run.
 
+## Simulator push notifications
+
+`setPushToken(_:)` uses APNs sandbox automatically on the simulator. The host still needs
+push capability, notification permission through its existing flow, and a real APNs token.
+Use an APNs-capable simulator on supported Mac hardware and configure matching sandbox
+credentials in the dashboard. SDK 1.0.0 requires an explicit `.sandbox` override.
+
+Verify actual receipt after an APNs request; a successful chat setup check or `simctl push`
+only verifies its own path. Before shipping, also test push on a physical iPhone. Do not log tokens.
+
 ## Unit tests
 
 `Tests/ReceptionTests` holds focused tests for identity token decoding, the single-flight token refresh, server cooldowns (retry scope parsing, the network-boundary gate, persistence and send intent), and localization. Run them on an installed simulator:
