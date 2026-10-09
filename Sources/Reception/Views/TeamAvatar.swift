@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Keeps a neutral placeholder until the author is known, then their initial until the photo loads.
+/// Shown only for a known author: their initial until the photo loads.
 internal struct TeamAvatar: View {
     let member: TeamMember?
     let image: UIImage?

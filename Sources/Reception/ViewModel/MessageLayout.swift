@@ -39,7 +39,7 @@ extension ChatModel {
             author: author,
             authorPhoto: appearance.showsTeamPhotos ? message.authorId.flatMap { teamProfiles.images[$0] } : nil,
             showsAuthorName: author != nil && appearance.showsTeamNames && startsGroup,
-            showsAuthorPhoto: reservesPhotoColumn && (next.map { !sameGroup(message, $0) } ?? true),
+            showsAuthorPhoto: author != nil && reservesPhotoColumn && (next.map { !sameGroup(message, $0) } ?? true),
             reservesPhotoColumn: reservesPhotoColumn
         )
     }

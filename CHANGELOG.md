@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Team replies without a known author no longer show an empty avatar circle.
+
 ## [1.1.0] — 2026-10-06
 
 ### Added
