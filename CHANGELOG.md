@@ -3,11 +3,16 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] — 2026-10-14
 
-- Keep the composer inside embedded chat bounds on iOS 26.
-- Add non-prompting APNs registration and notification-delegate helpers; existing push APIs are unchanged.
-- Support bundled resources when the SDK is compiled through CocoaPods.
+### Added
+
+- Non-prompting APNs registration and notification-delegate helpers; existing push APIs are unchanged.
+- Bundled resources load when the SDK is compiled through CocoaPods, as in the React Native package.
+
+### Fixed
+
+- The composer stays inside embedded chat bounds on iOS 26.
 
 ## [1.1.1] — 2026-10-09
 
