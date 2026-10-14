@@ -11,13 +11,13 @@ internal enum ReceptionLocalization {
         ["ar", "he", "ur"].contains(language) ? .rightToLeft : .leftToRight
     }
     static var bundle: Bundle {
-        guard let url = Bundle.module.url(forResource: language, withExtension: "lproj"),
+        guard let url = ReceptionResources.bundle.url(forResource: language, withExtension: "lproj"),
               let bundle = Bundle(url: url) else { return englishBundle }
         return bundle
     }
     private static var englishBundle: Bundle {
-        guard let url = Bundle.module.url(forResource: "en", withExtension: "lproj"),
-              let bundle = Bundle(url: url) else { return .module }
+        guard let url = ReceptionResources.bundle.url(forResource: "en", withExtension: "lproj"),
+              let bundle = Bundle(url: url) else { return ReceptionResources.bundle }
         return bundle
     }
 
