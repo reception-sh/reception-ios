@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 
 internal struct Composer: View {
+    @Environment(\.isPresented) private var isPresented
     let chat: ChatModel
     @Bindable private var model: ComposerModel
     @State private var keyboardVisible = false
@@ -34,7 +35,7 @@ internal struct Composer: View {
         .animation(Theme.sendingDisabledAnimation, value: chat.verificationRequired)
         .padding(.leading, sizes.leading)
         .padding(.trailing, sizes.trailing)
-        .padding(.bottom, sizes.bottom)
+        .padding(.bottom, isPresented ? sizes.bottom : max(Theme.zero, sizes.bottom))
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
         .task {
             for await height in NotificationCenter.default.notifications(named: UIResponder.keyboardWillShowNotification)

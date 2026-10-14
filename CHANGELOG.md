@@ -5,6 +5,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+- Keep the composer inside embedded chat bounds on iOS 26.
 - Add non-prompting APNs registration and notification-delegate helpers; existing push APIs are unchanged.
 - Support bundled resources when the SDK is compiled through CocoaPods.
 
