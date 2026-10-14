@@ -5,6 +5,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+- Add non-prompting APNs registration and notification-delegate helpers; existing push APIs are unchanged.
 - Support bundled resources when the SDK is compiled through CocoaPods.
 
 ## [1.1.1] — 2026-10-09
