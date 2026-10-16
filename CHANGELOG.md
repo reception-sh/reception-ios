@@ -3,6 +3,12 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] — Unreleased
+
+### Added
+
+- Device registration and updates report the appearance your app sets in code (`Reception.shared.appearance`, as values that differ from the defaults, plus the asset-catalog accent color and `usesRemoteAppearance`). The dashboard's chat design editor starts from that design instead of the built-in defaults. Bundled images are reported only as present, never uploaded. Remote appearance precedence is unchanged.
+
 ## [1.2.0] — 2026-10-14
 
 ### Added

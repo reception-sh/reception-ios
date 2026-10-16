@@ -29,6 +29,8 @@ internal enum DeviceInfo {
         body["paywalls"] = Reception.shared.availablePaywalls.map { ["id": $0.id, "title": $0.title] }
         body["metadata"] = identity.metadata
         body["updatesAppBadge"] = Reception.shared.updatesAppBadge
+        body["appearance"] = HostAppearanceReport.payload(Reception.shared.appearance,
+                                                          usesRemoteAppearance: Reception.shared.usesRemoteAppearance)
         if let identityToken { body["identityToken"] = identityToken }
         do { return try JSONSerialization.data(withJSONObject: body) }
         catch { throw ReceptionAPIError(code: "invalid_device_info", status: 0) }

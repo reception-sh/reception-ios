@@ -79,9 +79,10 @@ extension Reception {
             var iconSize: CGFloat?
         }
 
-        private var titleOverride: String?
-        private var welcomeTitleOverride: String?
-        private var welcomeTextOverride: String?
+        // Read by HostAppearanceReport, which reports only text the host set itself.
+        internal private(set) var titleOverride: String?
+        internal private(set) var welcomeTitleOverride: String?
+        internal private(set) var welcomeTextOverride: String?
 
         public init() {}
 

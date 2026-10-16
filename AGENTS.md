@@ -38,7 +38,7 @@ never crash, never block startup, never require anything from the host.
   content, or service credentials.
 - **Focused unit tests only**, for security-relevant parsing and concurrency that is easy to get
   subtly wrong (identity token decoding, single-flight token refresh, authenticated action delivery),
-  and focused paywall API contract checks. Tests never touch the
+  and focused paywall and appearance-report contract checks. Tests never touch the
   Keychain (the simulator test host has no Keychain entitlement) and stub HTTP with
   `URLProtocol`. Everything else is verified with `xcodebuild build` for the simulator (without
   warnings), the examples, and a manual run against the hosted service. See

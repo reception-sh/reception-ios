@@ -8,7 +8,7 @@ Read [AGENTS.md](AGENTS.md) before working on the SDK. Maintainers with access t
 
 Use Xcode 26 with an installed iOS simulator. Open the package directory for SDK work; use Xcode’s **Add Local…** when a host app needs to exercise your local SDK changes. The apps in `Examples/` reference the package locally through their `project.yml`.
 
-Device registration and updates include `bundleId` from `Bundle.main.bundleIdentifier`, omitting it when nil.
+Device registration and updates include `bundleId` from `Bundle.main.bundleIdentifier`, omitting it when nil. They also include `appearance`, the host appearance in the dashboard schema (`HostAppearanceReport`), so the chat design editor can show the app's coded design.
 
 The examples connect to the hosted Reception service. Replace `app_YOUR_APP_ID` in each example with the App ID of your test app, and do not commit it.
 
