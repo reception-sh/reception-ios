@@ -3,7 +3,7 @@ import UIKit
 import UserNotifications
 
 @MainActor
-final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+final class AppDelegate: NSObject, UIApplicationDelegate, @preconcurrency UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
@@ -21,28 +21,18 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         print("Failed to register for remote notifications: \(error)")
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                            willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        let payload = notification.request.content.userInfo["reception"] as? [String: Any]
-        if let conversationId = payload?["conversationId"] as? String {
-            let options: UNNotificationPresentationOptions? = await MainActor.run {
-                guard Reception.shared.handlePushNotification(
-                    userInfo: ["reception": ["conversationId": conversationId]],
-                    openChat: false
-                ) else { return nil }
-                return Reception.shared.isChatOpen ? [] : [.banner, .sound]
-            }
-            if let options { return options }
+    // Keep these on the main actor. A nonisolated async version completes off the main thread,
+    // and UIKit aborts when the user taps a notification.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+        if Reception.shared.handlePushNotification(userInfo: notification.request.content.userInfo, openChat: false) {
+            return Reception.shared.isChatOpen ? [] : [.banner, .sound]
         }
         return [.banner, .sound]
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                            didReceive response: UNNotificationResponse) async {
-        let payload = response.notification.request.content.userInfo["reception"] as? [String: Any]
-        guard let conversationId = payload?["conversationId"] as? String else { return }
-        await MainActor.run {
-            _ = Reception.shared.handlePushNotification(userInfo: ["reception": ["conversationId": conversationId]])
-        }
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse) async {
+        Reception.shared.handlePushNotification(userInfo: response.notification.request.content.userInfo)
     }
 }
