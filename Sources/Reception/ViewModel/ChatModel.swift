@@ -32,6 +32,10 @@ internal final class ChatModel {
     var polling: Task<Void, Never>?
     var streamID: UUID?
     var streamConnected = false
+    /// A stream that stayed up this long has recovered: its next drop starts a fresh backoff.
+    var healthyStreamDuration: Duration = .seconds(10)
+    /// After eight failures in a row the stream keeps trying at this pace while the chat stays open.
+    var exhaustedStreamRetryInterval: Duration = .seconds(60)
     var pathSatisfied: Bool?
     var linkGrace: Task<Void, Never>?
     var isTyping = false
@@ -89,7 +93,9 @@ internal final class ChatModel {
 
     func startPolling() {
         isChatActive = true
-        guard session?.store.hasStartedChat == true else { return }
+        guard let session, session.store.hasStartedChat else { return }
+        // Opening the chat or sending a message is a fresh start for a stream that gave up, as a foreground is.
+        session.retries["stream"]?.foreground()
         startStream()
         for message in messages where message.status == .sending { submit(message.id) }
         startMonitoring()

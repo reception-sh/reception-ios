@@ -3,6 +3,12 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [1.4.1] — 2026-10-22
+
+### Fixed
+
+- The live connection no longer stops for good after eight drops over the life of a session. A stream that stayed up for ten seconds now starts a fresh backoff when it drops, eight failures in a row only slow retries to once a minute while the chat stays open, and reopening the chat, sending a message or the network coming back retries at once. Before, the chat could show “Connecting” without trying again until the app went to the background and returned.
+
 ## [1.4.0] — 2026-10-22
 
 ### Added

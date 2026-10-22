@@ -18,6 +18,10 @@ final class StubURLProtocol: URLProtocol {
         var delay: TimeInterval = 0
         var gate: Gate?
         var networkError: URLError.Code?
+        /// Fails the load after the response and data were delivered, like a connection lost mid-stream.
+        var failAfterData: URLError.Code?
+        /// Delivers the response and data but never finishes, like a live stream that stays open.
+        var holdOpen = false
     }
     final class Gate: Sendable {
         private struct State { var open = false; var deliveries: [() -> Void] = [] }
@@ -87,7 +91,8 @@ final class StubURLProtocol: URLProtocol {
             guard !self.stopped.withLock({ $0 }) else { return }
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
             client?.urlProtocol(self, didLoad: reply.data ?? Data(reply.body.utf8))
-            client?.urlProtocolDidFinishLoading(self)
+            if let code = reply.failAfterData { client?.urlProtocol(self, didFailWithError: URLError(code)) }
+            else if !reply.holdOpen { client?.urlProtocolDidFinishLoading(self) }
         }
         if let gate = reply.gate {
             gate.wait(deliver)

@@ -26,7 +26,10 @@ extension ChatModel {
                 if self.isChatActive, self.session?.store.hasStartedChat == true {
                     if satisfied {
                         // Network is back: drop the backoff and reconnect right away.
-                        if previous == false { self.cancelStream() }
+                        if previous == false {
+                            self.cancelStream()
+                            self.session?.retries["stream"]?.foreground()
+                        }
                         self.startStream()
                         self.retryFailedAutomatically()
                     } else {

@@ -2,7 +2,7 @@ import SwiftUI
 
 extension ChatModel {
     func startStream() {
-        guard isChatActive, current, let session, session.store.hasConversation, session.halt == nil, session.retries["stream"]?.stopped != true, polling == nil else { return }
+        guard isChatActive, current, let session, session.store.hasConversation, session.halt == nil, polling == nil else { return }
         let id = UUID()
         streamID = id
         polling = Task { [weak self] in
@@ -15,12 +15,17 @@ extension ChatModel {
                 }
             }
             while !Task.isCancelled, self.current, self.isChatActive, session.store.hasConversation, session.halt == nil {
-                if let delay = session.retries["stream"]?.delay {
+                if session.retries["stream"]?.stopped == true {
+                    // Eight failures in a row: keep trying at a slow pace while the chat stays open, so a long outage still ends live.
+                    do { try await Task.sleep(for: self.exhaustedStreamRetryInterval) } catch { return }
+                    session.retries["stream"] = nil
+                } else if let delay = session.retries["stream"]?.delay {
                     do { try await Task.sleep(for: delay) } catch { return }
                 }
-                guard session.halt == nil, session.retries["stream"]?.stopped != true, !Task.isCancelled else { return }
+                guard session.halt == nil, !Task.isCancelled else { return }
                 var failure: Error = URLError(.networkConnectionLost)
                 var reconnect = false
+                var connected: ContinuousClock.Instant?
                 do {
                     guard !Task.isCancelled, self.current, self.isChatActive,
                           UIApplication.shared.applicationState == .active else { return }
@@ -29,7 +34,8 @@ extension ChatModel {
                     guard self.current, self.isChatActive,
                           UIApplication.shared.applicationState == .active else { return }
                     self.streamDidConnect()
-                    var lastRefresh = ContinuousClock.now
+                    connected = .now
+                    var lastRefresh = connected ?? .now
                     await self.poll()
                     lines: for try await line in bytes.lines {
                         try Task.checkCancellation()
@@ -68,6 +74,8 @@ extension ChatModel {
                 if reconnect { continue }
                 self.streamDidDisconnect()
                 guard session.halt == nil else { return }
+                // A stream that stayed up had recovered: its drop starts a fresh backoff instead of adding to old failures.
+                if let connected, connected.duration(to: .now) >= self.healthyStreamDuration { session.retries["stream"] = nil }
                 session.retries["stream", default: RetryState()].failed(failure)
             }
         }
