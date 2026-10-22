@@ -113,6 +113,8 @@ public final class Reception {
     internal var revision = 0
     internal var presentationRevision = 0
     internal let presenter = ChatPresenter()
+    internal let automations = Automations()
+    internal let paidAccess = PaidAccess()
     private(set) var chat: ChatModel?
     internal var scope: String?
     internal let unreadMonitor = UnreadMonitor()
@@ -175,6 +177,7 @@ public final class Reception {
         shared.unreadMonitor.setActive(UIApplication.shared.applicationState == .active)
         shared.applicationLifecycle.start()
         shared.refreshPaywalls()
+        shared.checkSubscriptions()
         Log.info("Configured, SDK \(version)")
         #if DEBUG && targetEnvironment(simulator)
         SetupCheck.startIfRequested(configuredAppId: appId)

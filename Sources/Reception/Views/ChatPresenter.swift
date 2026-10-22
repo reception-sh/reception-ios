@@ -97,7 +97,8 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
         guard let scene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first,
               let window = scene.windows.first(where: \.isKeyWindow) ?? scene.windows.first else { return nil }
         var controller = window.rootViewController
-        while let presented = controller?.presentedViewController { controller = presented }
+        // A paywall that is closing cannot present: the chat would vanish with it.
+        while let presented = controller?.presentedViewController, !presented.isBeingDismissed { controller = presented }
         return controller
     }
 }

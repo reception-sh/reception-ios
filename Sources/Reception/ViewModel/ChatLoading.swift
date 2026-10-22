@@ -1,4 +1,4 @@
-import UIKit
+import SwiftUI
 
 extension ChatModel {
     func load(recheckLimits: Bool = false) async {
@@ -29,8 +29,10 @@ extension ChatModel {
                 cachedIds.contains(message.id) && message.seq.map { !incomingSequences.contains($0) } == true
             }
             team = Dictionary((response.team ?? []).map { ($0.id, $0) }) { first, _ in first }
-            merge(response.messages)
+            let arriving = Reception.shared.automations.takeOpenedChat() ? Self.arriving(in: response.messages, cached: cachedIds) : nil
+            merge(response.messages.filter { $0.id != arriving?.id })
             if response.messages.isEmpty { saveMessages() }
+            if let arriving { await reveal(arriving) }
             if recheckLimits, isWatched {
                 if !checked.isEmpty { session.cooldowns.applyRecheck(response.limits, checked: checked) }
                 resumeLimitHeldMessages()
@@ -47,5 +49,20 @@ extension ChatModel {
                 resumeTransientFailures()
             }
         }
+    }
+
+    /// The newest message, when it is a team message this chat hasn't shown yet.
+    private static func arriving(in messages: [Message], cached: Set<String>) -> Message? {
+        guard let newest = messages.max(by: { ($0.seq ?? 0) < ($1.seq ?? 0) }),
+              newest.sender == "AGENT", !cached.contains(newest.id) else { return nil }
+        return newest
+    }
+
+    /// The team's typing dots for a moment, then the message, the way a reply arrives while the chat is open.
+    private func reveal(_ message: Message) async {
+        setTyping(true)
+        try? await Task.sleep(for: Theme.automationTypingDuration)
+        guard current, !Task.isCancelled else { return }
+        withAnimation(Theme.messageAnimation) { merge([message]) }
     }
 }

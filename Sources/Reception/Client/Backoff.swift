@@ -54,4 +54,6 @@ internal final class RequestProbe {
 
 internal enum RequestContext {
     @TaskLocal static var probe: RequestProbe?
+    /// Set while an automation event is sent: it may register the device before the user has written.
+    @TaskLocal static var automation = false
 }

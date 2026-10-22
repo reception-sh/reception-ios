@@ -26,6 +26,7 @@ internal final class ApplicationLifecycle: NSObject {
         Reception.shared.applicationActive = true
         Reception.shared.appearanceConfiguration.becameActive()
         Reception.shared.refreshPaywalls()
+        Reception.shared.checkSubscriptions()
         updateAppearanceRefresh()
     }
 
