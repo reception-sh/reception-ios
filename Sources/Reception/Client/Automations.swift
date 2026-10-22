@@ -19,25 +19,30 @@ internal final class Automations {
         event.range(of: "^[A-Za-z0-9_.-]{1,64}$", options: .regularExpression) != nil
     }
 
-    /// What became of an event: send it again later, it was handled, or its automation opened the chat.
-    private enum Delivery { case retry, handled, openedChat }
+    /// What became of an event: no enabled automation listens for it, send it again later, it was handled, or its
+    /// automation opened the chat.
+    private enum Delivery { case unheard, retry, handled, openedChat }
 
     func track(_ event: String, opensChat: Bool, session: DeviceSession) {
         let start = ContinuousClock.now
         let presentation = Reception.shared.presentationRevision
         Task {
             let delivery = await deliver(event, session: session, start: start, presentation: presentation)
-            // Asked for in any case, the chat opens as it is when no automation opened it with a message.
-            if opensChat, delivery != .openedChat, canOpenChat(start: start, presentation: presentation) { Reception.shared.openChat() }
+            // Only an enabled automation for the event opens the chat, so its switch in the dashboard turns both off.
+            // The chat then opens as it is when the automation didn't open it with its message.
+            guard opensChat, delivery != .openedChat, delivery != .unheard, session.halt == nil,
+                  canOpenChat(start: start, presentation: presentation) else { return }
+            Reception.shared.openChat()
         }
     }
 
     /// Sends `event` when an automation listens for it and opens the chat if the service asks. Retry only when the
     /// event should be sent again later: the request failed, or the same event is already on its way.
     private func deliver(_ event: String, session: DeviceSession, start: ContinuousClock.Instant, presentation: Int) async -> Delivery {
-        guard session.halt == nil, running.insert(event).inserted else { return .retry }
+        guard session.halt == nil else { return .retry }
+        guard await listens(to: event, session: session) else { return .unheard }
+        guard running.insert(event).inserted else { return .retry }
         defer { running.remove(event) }
-        guard await listens(to: event, session: session) else { return .handled }
         guard let result = await send(event, session: session) else { return .retry }
         guard session === Reception.shared.session else { return .handled }
         if result.sent { return received(result, event: event, session: session, start: start, presentation: presentation) }
