@@ -28,6 +28,77 @@ final class PaywallTests: XCTestCase {
         XCTAssertEqual((body["paywalls"] as? [[String: String]])?.count, 0)
     }
 
+    @MainActor
+    func testSourceAndProductsAreSentWhenProvided() throws {
+        let previous = Reception.shared.paywalls
+        defer { Reception.shared.paywalls = previous }
+        Reception.shared.paywalls = [ReceptionPaywall(id: "main", title: "Main", source: .revenueCat, products: [
+            .init(id: " pro_yearly ", price: "$59.99", period: "P1Y", trial: "P1W"),
+            .init(id: "pro_monthly", price: " ", period: "monthly"),
+            .init(id: "")
+        ] + (0..<12).map { .init(id: "extra_\($0)") })]
+        let paywall = try XCTUnwrap(Reception.shared.paywalls.first)
+        XCTAssertEqual(paywall.products.count, 9)
+        XCTAssertEqual(paywall.products.prefix(2), [.init(id: "pro_yearly", price: "$59.99", period: "P1Y", trial: "P1W"), .init(id: "pro_monthly")])
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: DeviceInfo.payload(identity: DeviceIdentity())) as? [String: Any])
+        let entry = try XCTUnwrap((body["paywalls"] as? [[String: Any]])?.first)
+        XCTAssertEqual(entry["source"] as? String, "revenuecat")
+        XCTAssertEqual((entry["products"] as? [[String: String]])?.first, ["id": "pro_yearly", "price": "$59.99", "period": "P1Y", "trial": "P1W"])
+        XCTAssertEqual((entry["products"] as? [[String: String]])?[1], ["id": "pro_monthly"])
+    }
+
+    @MainActor
+    func testUnknownSourcesAreSentAndInvalidOnesDropped() throws {
+        let previous = Reception.shared.paywalls
+        defer { Reception.shared.paywalls = previous }
+        Reception.shared.paywalls = [
+            ReceptionPaywall(id: "a", title: "A", source: .adapty),
+            ReceptionPaywall(id: "b", title: "B", source: .init(rawValue: "future-vendor")),
+            ReceptionPaywall(id: "c", title: "C", source: .init(rawValue: "Not A Slug!"))
+        ]
+        XCTAssertEqual(Reception.shared.paywalls.map(\.source), [.adapty, .init(rawValue: "future-vendor"), nil])
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: DeviceInfo.payload(identity: DeviceIdentity())) as? [String: Any])
+        XCTAssertEqual((body["paywalls"] as? [[String: Any]])?.map { $0["source"] as? String }, ["adapty", "future-vendor", nil])
+    }
+
+    @MainActor
+    func testInfoOnlyPaywallsAreAlwaysListedAndNeverOpen() async throws {
+        let reception = Reception.shared
+        let previous = (reception.paywalls, reception.paywallAvailability, reception.onPaywall)
+        defer { reception.paywalls = previous.0; reception.paywallAvailability = previous.1; reception.onPaywall = previous.2 }
+        reception.onPaywall = { _ in }
+        reception.paywalls = [ReceptionPaywall(id: "card", title: "Card"), ReceptionPaywall(id: "info", title: "Info", presentable: false)]
+        reception.paywallAvailability = { _ in false }
+        for _ in 0..<50 where reception.availablePaywalls.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(reception.availablePaywalls.map(\.id), ["info"])
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: DeviceInfo.payload(identity: DeviceIdentity())) as? [String: Any])
+        XCTAssertEqual((body["paywalls"] as? [[String: Any]])?.first?["presentable"] as? Bool, false)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let message = try decoder.decode(Message.self, from: Data("""
+        {"id":"m", "seq":1, "sender":"AGENT", "text":"", "attachments":[], "createdAt":"2026-09-24T10:00:00Z", "kind":"PAYWALL", "paywallId":"info"}
+        """.utf8))
+        XCTAssertFalse(ChatModel(session: nil).canOpenPaywall(message))
+    }
+
+    func testOriginalInitializerStaysReferenceable() {
+        // Apps on 1.3 may pass the initializer itself; default arguments would not apply to such a reference.
+        let make: (String, String) -> ReceptionPaywall = ReceptionPaywall.init
+        XCTAssertEqual(make("plans", "Plans"), ReceptionPaywall(id: "plans", title: "Plans", source: nil))
+        XCTAssertTrue(make("plans", "Plans").presentable)
+    }
+
+    @MainActor
+    func testProductsStayWithinTheRequestBudget() throws {
+        let previous = Reception.shared.paywalls
+        defer { Reception.shared.paywalls = previous }
+        let products = (0..<10).map { ReceptionPaywall.Product(id: String(repeating: "p", count: 99) + "\($0)", price: String(repeating: "¥", count: 40), period: "P1Y", trial: "P1W") }
+        Reception.shared.paywalls = (0..<20).map { ReceptionPaywall(id: "offer-\($0)", title: String(repeating: "é", count: 60), source: .app, products: products) }
+        XCTAssertEqual(Reception.shared.paywalls.reduce(0) { $0 + $1.products.count }, ReceptionPaywall.productBudget)
+        XCTAssertEqual(Reception.shared.paywalls.count, 20)
+        XCTAssertLessThan(try DeviceInfo.payload(identity: DeviceIdentity()).count, 32 * 1024)
+    }
+
     func testMessageDecoding() throws {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601

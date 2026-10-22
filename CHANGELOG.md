@@ -3,6 +3,12 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `ReceptionPaywall` takes an optional `source` (`.revenueCat`, `.superwall`, `.adapty`, `.app`, or any lowercase name for another vendor), up to 10 `products` (product ID, localized price, ISO 8601 renewal period and free trial; 40 across all paywalls) and `presentable` (default `true`; `false` lists an offering without a paywall for your team: it is always reported, never checked with `paywallAvailability` and never opened by a card). Registration sends them so the dashboard shows where each paywall is built and what it sells. All are optional with defaults, so existing `ReceptionPaywall(id:title:)` code is unchanged; an invalid product detail or source is dropped, never the paywall.
+
 ## [1.3.0] — 2026-10-16
 
 ### Added

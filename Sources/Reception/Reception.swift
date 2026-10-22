@@ -35,7 +35,8 @@ public final class Reception {
         }
     }
     public var isChatOpen: Bool { chat?.isVisible == true }
-    /// Every paywall the app offers. Without `paywallAvailability`, all of them are available.
+    /// Every paywall the app offers. Without `paywallAvailability`, all of them are available; info-only
+    /// entries (`presentable == false`) are always listed and never checked.
     public var paywalls: [ReceptionPaywall] {
         get { registeredPaywalls }
         set {
@@ -55,7 +56,8 @@ public final class Reception {
     public var paywallAvailability: (@MainActor (String) async -> Bool)? {
         didSet { refreshPaywalls(invalidate: true) }
     }
-    /// The paywalls that agents can send and cards can open: `paywalls` filtered by `paywallAvailability`.
+    /// `paywalls` filtered by `paywallAvailability`: what agents can send and cards can open, plus info-only
+    /// entries (`presentable == false`) that are listed for the team but never opened.
     public private(set) var availablePaywalls: [ReceptionPaywall] = []
     public var onPaywall: ((String) -> Void)?
     private var registeredPaywalls: [ReceptionPaywall] = []
@@ -395,13 +397,18 @@ public final class Reception {
             publishPaywalls(registeredPaywalls)
             return
         }
-        if invalidate { publishPaywalls([]) }
+        // Info-only entries never depend on availability, so invalidation keeps them and spares a device update.
+        if invalidate { publishPaywalls(registeredPaywalls.filter { !$0.presentable }) }
         let candidates = registeredPaywalls
         paywallCheck = Task {
             var approved: [ReceptionPaywall] = []
             for paywall in candidates {
                 guard generation == paywallGeneration else { return }
-                if await availability(paywall.id) { approved.append(paywall) }
+                if !paywall.presentable {
+                    approved.append(paywall)
+                } else if await availability(paywall.id) {
+                    approved.append(paywall)
+                }
             }
             // A check that ignored cancellation finishes here; a newer check or reset has replaced it.
             guard generation == paywallGeneration else { return }

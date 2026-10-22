@@ -26,7 +26,7 @@ internal enum DeviceInfo {
             values["pushEnvironment"] = pushEnvironment
         }
         var body: [String: Any] = values
-        body["paywalls"] = Reception.shared.availablePaywalls.map { ["id": $0.id, "title": $0.title] }
+        body["paywalls"] = Reception.shared.availablePaywalls.map(\.payload)
         body["metadata"] = identity.metadata
         body["updatesAppBadge"] = Reception.shared.updatesAppBadge
         body["appearance"] = HostAppearanceReport.payload(Reception.shared.appearance,

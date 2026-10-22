@@ -68,7 +68,7 @@ internal final class ChatModel {
 
     func canOpenPaywall(_ message: Message) -> Bool {
         message.kind == "PAYWALL" && Reception.shared.onPaywall != nil &&
-            Reception.shared.availablePaywalls.contains { $0.id == message.paywallId }
+            Reception.shared.availablePaywalls.contains { $0.id == message.paywallId && $0.presentable }
     }
 
     func openPaywall(_ message: Message) {
