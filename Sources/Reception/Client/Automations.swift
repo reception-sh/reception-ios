@@ -19,33 +19,39 @@ internal final class Automations {
         event.range(of: "^[A-Za-z0-9_.-]{1,64}$", options: .regularExpression) != nil
     }
 
-    /// What became of an event: no enabled automation listens for it, send it again later, it was handled, with
-    /// whether the service says an automation that opens the chat reached this device, or its automation opened the chat.
-    private enum Delivery: Equatable { case unheard, retry, handled(openChat: Bool), openedChat }
+    /// What became of an event: no enabled automation listens for it, send it again later, its message was just
+    /// sent, or it was handled otherwise; both with whether the service says a chat-opening automation reached this device.
+    private enum Delivery: Equatable { case unheard, retry, received(openChat: Bool), handled(openChat: Bool) }
 
     func track(_ event: String, opensChat: Bool, session: DeviceSession) {
         let start = ContinuousClock.now
         let presentation = Reception.shared.presentationRevision
         Task {
-            let delivery = await deliver(event, session: session, start: start, presentation: presentation)
+            let delivery = await deliver(event, session: session)
+            guard session.halt == nil else { return }
+            switch delivery {
+            case .received(openChat: true):
+                await openChatWhenSettled(start: start, presentation: presentation, arriving: true)
             // The service decides: the chat opens again only for people an enabled automation that opens it reached,
             // so nobody it excludes, delays or reaches with a badge or push sees an empty chat.
-            guard opensChat, delivery == .handled(openChat: true), session.halt == nil,
-                  canOpenChat(start: start, presentation: presentation) else { return }
-            Reception.shared.openChat()
+            case .handled(openChat: true) where opensChat:
+                await openChatWhenSettled(start: start, presentation: presentation, arriving: false)
+            default:
+                return
+            }
         }
     }
 
     /// Sends `event` when an automation listens for it and opens the chat if the service sent a message that opens it.
     /// Retry only when the event should be sent again later: the request failed, or the same event is already on its way.
-    private func deliver(_ event: String, session: DeviceSession, start: ContinuousClock.Instant, presentation: Int) async -> Delivery {
+    private func deliver(_ event: String, session: DeviceSession) async -> Delivery {
         guard session.halt == nil else { return .retry }
         guard await listens(to: event, session: session) else { return .unheard }
         guard running.insert(event).inserted else { return .retry }
         defer { running.remove(event) }
         guard let result = await send(event, session: session) else { return .retry }
         guard session === Reception.shared.session else { return .handled(openChat: false) }
-        if result.sent { return received(result, event: event, session: session, start: start, presentation: presentation) }
+        if result.sent { return received(result, event: event, session: session) }
         if result.scheduled == true { scheduled(event, session: session) }
         return .handled(openChat: result.openChat)
     }
@@ -56,20 +62,27 @@ internal final class Automations {
         session.store.hasStartedChat = true
     }
 
-    private func received(_ result: Sent, event: String, session: DeviceSession, start: ContinuousClock.Instant, presentation: Int) -> Delivery {
+    private func received(_ result: Sent, event: String, session: DeviceSession) -> Delivery {
         Log.debug("Automation message received for \(event)")
         session.store.hasStartedChat = true
         Reception.shared.refreshUnread()
-        guard result.openChat, canOpenChat(start: start, presentation: presentation) else { return .handled(openChat: result.openChat) }
-        openedChatAt = .now
-        Reception.shared.openChat()
-        return .openedChat
+        return .received(openChat: result.openChat)
     }
 
-    /// Only soon after `track`, while the app shows the same screens in front and the chat is closed.
-    private func canOpenChat(start: ContinuousClock.Instant, presentation: Int) -> Bool {
-        ContinuousClock.now - start < openWindow && presentation == Reception.shared.presentationRevision
-            && UIApplication.shared.applicationState == .active && !Reception.shared.isChatOpen
+    /// Opens the chat as soon as the app is active and no screen in front is still opening or closing, if that comes
+    /// within the window after the event; later, it would surprise the user. A cancelled purchase is reported while
+    /// the App Store sheet is still closing, and a closed paywall often comes straight back, so neither moment is
+    /// missed. The chat stays closed if the person logged out meanwhile or the chat is already open.
+    private func openChatWhenSettled(start: ContinuousClock.Instant, presentation: Int, arriving: Bool) async {
+        while ContinuousClock.now - start < openWindow {
+            guard presentation == Reception.shared.presentationRevision, !Reception.shared.isChatOpen else { return }
+            if Reception.shared.presenter.isSettled {
+                if arriving { openedChatAt = .now }
+                if Reception.shared.presenter.present() { return }
+            }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        Log.debug("Chat not opened, the app or its screens did not settle in time")
     }
 
     /// Whether an automation opened the chat a moment ago, so its message can arrive like a reply. Answers once.
@@ -93,9 +106,14 @@ internal final class Automations {
             for (group, state) in await StoreSubscriptions.current() {
                 if let event = StoreSubscriptions.event(from: known[group], to: state) {
                     // An undelivered change keeps the old state, so the next check reports it again.
-                    let delivery = await deliver(event, session: session, start: .now, presentation: Reception.shared.presentationRevision)
+                    let start = ContinuousClock.now
+                    let presentation = Reception.shared.presentationRevision
+                    let delivery = await deliver(event, session: session)
                     guard delivery != .retry else { continue }
                     Log.debug("Subscription change reported as \(event)")
+                    if delivery == .received(openChat: true), session.halt == nil {
+                        await openChatWhenSettled(start: start, presentation: presentation, arriving: true)
+                    }
                 }
                 known[group] = state
             }

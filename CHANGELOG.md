@@ -14,7 +14,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
-- The chat no longer opens on a screen that is being dismissed, where it would close with that screen, or while another screen is still opening, where the two would fight for the screen.
+- The chat no longer opens on a screen that is being dismissed, where it would close with that screen.
+- An automation opens the chat once the app is active again and the screen in front has finished opening or closing, as long as that comes within five seconds of the event. A cancelled purchase is reported while the App Store sheet is still closing, and a closed paywall often comes straight back; before, the chat stayed closed in both cases and the message waited unread.
 
 ## [1.4.1] — 2026-10-22
 

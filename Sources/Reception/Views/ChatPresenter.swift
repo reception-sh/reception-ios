@@ -17,26 +17,29 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
             name: UIScene.didActivateNotification, object: nil)
     }
 
-    func present() {
+    /// Presents the chat, or arranges for it: after a dismissal in progress, or once a window is active. Answers
+    /// false only when another screen is still opening, so a caller that can wait tries again.
+    @discardableResult
+    func present() -> Bool {
         if dismissing {
             presentAfterDismiss = true
-            return
+            return true
         }
         guard !Reception.shared.isChatOpen, hostingController == nil else {
             presentationPending = false
             Log.debug("Chat presentation skipped, chat already open")
-            return
+            return true
         }
         guard let presentingController else {
             presentationPending = true
             Log.debug("Chat presentation deferred, no active window")
-            return
+            return true
         }
-        // A screen that is still opening owns this moment; the chat would only fight it. Its message waits unread.
+        // A screen that is still opening owns this moment; the chat would only fight it.
         guard !presentingController.isBeingPresented else {
             presentationPending = false
             Log.debug("Chat presentation skipped, another screen is being presented")
-            return
+            return false
         }
 
         presentationPending = false
@@ -54,6 +57,18 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
         presentingController.present(controller, animated: true) {
             if self.hostingController === controller { Log.debug("Chat presented") }
         }
+        return true
+    }
+
+    /// Whether the chat can open right now: the app is active and no screen in front is still opening or closing.
+    /// A cancelled purchase is reported while the App Store sheet is still closing, and a closed paywall often
+    /// comes straight back, so an automation waits for this before it opens the chat.
+    var isSettled: Bool {
+        guard UIApplication.shared.applicationState == .active else { return false }
+        var controller = window?.rootViewController
+        while let presented = controller?.presentedViewController { controller = presented }
+        guard let front = controller else { return true }
+        return !front.isBeingPresented && !front.isBeingDismissed
     }
 
     @discardableResult
@@ -98,11 +113,14 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
         present()
     }
 
-    private var presentingController: UIViewController? {
+    private var window: UIWindow? {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-        guard let scene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first,
-              let window = scene.windows.first(where: \.isKeyWindow) ?? scene.windows.first else { return nil }
-        var controller = window.rootViewController
+        guard let scene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first else { return nil }
+        return scene.windows.first(where: \.isKeyWindow) ?? scene.windows.first
+    }
+
+    private var presentingController: UIViewController? {
+        var controller = window?.rootViewController
         // A paywall that is closing cannot present: the chat would vanish with it.
         while let presented = controller?.presentedViewController, !presented.isBeingDismissed { controller = presented }
         return controller
