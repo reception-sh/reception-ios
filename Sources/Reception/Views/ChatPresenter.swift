@@ -32,6 +32,12 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
             Log.debug("Chat presentation deferred, no active window")
             return
         }
+        // A screen that is still opening owns this moment; the chat would only fight it. Its message waits unread.
+        guard !presentingController.isBeingPresented else {
+            presentationPending = false
+            Log.debug("Chat presentation skipped, another screen is being presented")
+            return
+        }
 
         presentationPending = false
         Reception.shared.appearanceConfiguration.activate()
