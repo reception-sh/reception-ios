@@ -19,35 +19,35 @@ internal final class Automations {
         event.range(of: "^[A-Za-z0-9_.-]{1,64}$", options: .regularExpression) != nil
     }
 
-    /// What became of an event: no enabled automation listens for it, send it again later, it was handled, or its
-    /// automation opened the chat.
-    private enum Delivery { case unheard, retry, handled, openedChat }
+    /// What became of an event: no enabled automation listens for it, send it again later, it was handled, with
+    /// whether the service says an automation that opens the chat reached this device, or its automation opened the chat.
+    private enum Delivery: Equatable { case unheard, retry, handled(openChat: Bool), openedChat }
 
     func track(_ event: String, opensChat: Bool, session: DeviceSession) {
         let start = ContinuousClock.now
         let presentation = Reception.shared.presentationRevision
         Task {
             let delivery = await deliver(event, session: session, start: start, presentation: presentation)
-            // Only an enabled automation for the event opens the chat, so its switch in the dashboard turns both off.
-            // The chat then opens as it is when the automation didn't open it with its message.
-            guard opensChat, delivery != .openedChat, delivery != .unheard, session.halt == nil,
+            // The service decides: the chat opens again only for people an enabled automation that opens it reached,
+            // so nobody it excludes, delays or reaches with a badge or push sees an empty chat.
+            guard opensChat, delivery == .handled(openChat: true), session.halt == nil,
                   canOpenChat(start: start, presentation: presentation) else { return }
             Reception.shared.openChat()
         }
     }
 
-    /// Sends `event` when an automation listens for it and opens the chat if the service asks. Retry only when the
-    /// event should be sent again later: the request failed, or the same event is already on its way.
+    /// Sends `event` when an automation listens for it and opens the chat if the service sent a message that opens it.
+    /// Retry only when the event should be sent again later: the request failed, or the same event is already on its way.
     private func deliver(_ event: String, session: DeviceSession, start: ContinuousClock.Instant, presentation: Int) async -> Delivery {
         guard session.halt == nil else { return .retry }
         guard await listens(to: event, session: session) else { return .unheard }
         guard running.insert(event).inserted else { return .retry }
         defer { running.remove(event) }
         guard let result = await send(event, session: session) else { return .retry }
-        guard session === Reception.shared.session else { return .handled }
+        guard session === Reception.shared.session else { return .handled(openChat: false) }
         if result.sent { return received(result, event: event, session: session, start: start, presentation: presentation) }
         if result.scheduled == true { scheduled(event, session: session) }
-        return .handled
+        return .handled(openChat: result.openChat)
     }
 
     /// A message that waits for its time arrives later, so the chat watches for it from now on, as after a send.
@@ -60,7 +60,7 @@ internal final class Automations {
         Log.debug("Automation message received for \(event)")
         session.store.hasStartedChat = true
         Reception.shared.refreshUnread()
-        guard result.openChat, canOpenChat(start: start, presentation: presentation) else { return .handled }
+        guard result.openChat, canOpenChat(start: start, presentation: presentation) else { return .handled(openChat: result.openChat) }
         openedChatAt = .now
         Reception.shared.openChat()
         return .openedChat

@@ -4,9 +4,9 @@ extension Reception {
     /// Reports that something happened in your app, for example `"paywall_declined"`. When an automation in your
     /// dashboard listens for the event, Reception sends its message and opens the chat. Other events stay on the device.
     ///
-    /// With `opensChat`, the chat opens every time an enabled automation listens for the event: with its message the
-    /// first time, otherwise as it is, where that message is still there. For example when a paywall closes without a
-    /// purchase. Without an enabled automation for the event, nothing opens.
+    /// With `opensChat`, the chat also opens again at later events for people who received an enabled automation's
+    /// message that opens the chat, so they find it again. For example when a paywall closes without a purchase. People
+    /// the automation doesn't reach, because its rules exclude them or its message comes later or as a push, see nothing.
     ///
     /// Names use 1–64 letters, digits, underscores, dots or hyphens. Returns at once and never fails: offline,
     /// on a server error or when the automation does not apply, no message comes.

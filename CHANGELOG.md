@@ -7,7 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
-- `Reception.shared.track(_:opensChat:)` reports app events, such as a closed paywall, for automations set up in the dashboard. An automation's message arrives in the chat once; with `opensChat: true` the chat opens every time while an enabled automation listens for the event.
+- `Reception.shared.track(_:opensChat:)` reports app events, such as a closed paywall, for automations set up in the dashboard. An automation's message arrives in the chat once; with `opensChat: true` the chat opens when the message is sent and again at later events for people who received it.
 - While an automation listens for them, the SDK reports `trial_cancelled`, `subscription_cancelled`, `billing_issue` and `subscription_expired` from the App Store when the app becomes active.
 - Device registration and updates report whether the person has paid access in the App Store.
 - The team's typing indicator shows briefly before an automation's message appears in a chat it opened.
