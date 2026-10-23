@@ -10,6 +10,7 @@ internal final class Automations {
     /// The chat opens only this soon after `track`, so a slow response never surprises the user later.
     private let openWindow = Duration.seconds(5)
     private var listened: Listened?
+    private var listing: (appId: String, task: Task<Listened, Never>)?
     private var running: Set<String> = []
     private var checkingSubscriptions = false
     private var subscriptionsCheckedAt: ContinuousClock.Instant?
@@ -140,15 +141,29 @@ internal final class Automations {
     private func listens(toAnyOf events: Set<String>, session: DeviceSession) async -> Bool {
         let appId = session.api.appId
         if let listened, listened.appId == appId, ContinuousClock.now < listened.until { return !listened.events.isDisjoint(with: events) }
+        // Events often arrive together, like a closed paywall and the purchase it ended; one request answers them all.
+        let task: Task<Listened, Never>
+        if let listing, listing.appId == appId {
+            task = listing.task
+        } else {
+            task = Task { await Self.fetchListened(appId: appId, api: session.api) }
+            listing = (appId, task)
+        }
+        let result = await task.value
+        if listing?.task == task { listing = nil }
+        listened = result
+        return !result.events.isDisjoint(with: events)
+    }
+
+    private static func fetchListened(appId: String, api: ReceptionAPI) async -> Listened {
         struct Response: Decodable { let events: [String] }
         do {
-            let response: Response = try await session.api.request("automations")
-            listened = Listened(appId: appId, events: Set(response.events), until: .now + .seconds(300))
+            let response: Response = try await api.request("automations")
+            return Listened(appId: appId, events: Set(response.events), until: .now + .seconds(300))
         } catch {
             Log.debug("Automations unavailable, events are not sent for a minute")
-            listened = Listened(appId: appId, events: [], until: .now + .seconds(60))
+            return Listened(appId: appId, events: [], until: .now + .seconds(60))
         }
-        return listened?.events.isDisjoint(with: events) == false
     }
 
     private func send(_ event: String, session: DeviceSession) async -> Sent? {
