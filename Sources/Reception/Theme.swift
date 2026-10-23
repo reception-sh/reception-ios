@@ -10,6 +10,7 @@ internal enum Theme {
     static let layoutSettleDuration = 0.25
     static let deliveryStatusAnimation = Animation.easeOut(duration: 0.2)
     static let messageAnimation = Animation.easeOut(duration: 0.25)
+    static let automationTypingDuration = Duration.milliseconds(800)
     static let sendButtonAnimation = Animation.easeOut(duration: 0.2)
     static let uploadProgressHorizontalInset: CGFloat = 24
     static let sendingDotRestingOpacity = 0.35

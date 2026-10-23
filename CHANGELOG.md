@@ -3,6 +3,20 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] — 2026-10-23
+
+### Added
+
+- `Reception.shared.track(_:opensChat:)` reports app events, such as a closed paywall, for automations set up in the dashboard. An automation's message arrives in the chat once; with `opensChat: true` the chat opens when the message is sent and again at later events for people who received it.
+- While an automation listens for them, the SDK reports `trial_cancelled`, `trial_expired`, `subscription_cancelled`, `billing_issue` and `subscription_expired` from the App Store when the app becomes active.
+- Device registration and updates report whether the person has paid access in the App Store.
+- The team's typing indicator shows briefly before an automation's message appears in a chat it opened.
+
+### Fixed
+
+- The chat no longer opens on a screen that is being dismissed, where it would close with that screen.
+- An automation opens the chat once the app is active again and the screen in front has finished opening or closing, as long as that comes within five seconds of the event. A cancelled purchase is reported while the App Store sheet is still closing, and a closed paywall often comes straight back; before, the chat stayed closed in both cases and the message waited unread.
+
 ## [1.4.1] — 2026-10-22
 
 ### Fixed

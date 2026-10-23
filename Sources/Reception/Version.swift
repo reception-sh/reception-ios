@@ -1,3 +1,3 @@
 internal enum SDKVersion {
-    static let current = "1.4.1"
+    static let current = "1.5.0"
 }

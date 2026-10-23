@@ -63,12 +63,15 @@ extension Reception {
     }
 
     public func setMetadata(_ metadata: [String: String]) {
-        guard let store = session?.store else {
+        guard let session else {
             Log.error("setMetadata called before configure, ignored")
             return
         }
-        var identity = store.pending; identity.metadata = DeviceInputValidation.checked(metadata); store.pending = identity
+        var identity = session.store.pending
+        let previousStatus = identity.metadata["subscription_status"]
+        identity.metadata = DeviceInputValidation.checked(metadata); session.store.pending = identity
         Log.debug("Metadata staged")
+        if identity.metadata["subscription_status"] != previousStatus { automations.subscriptionChanged(session: session) }
     }
 
     /// Another user's token: revoke and reset the previous session, keep only the new token and the push token.

@@ -86,6 +86,15 @@ internal final class DeviceStore {
         }
     }
 
+    /// The last App Store state of each subscription group, so only a change is reported to automations.
+    var subscriptionStates: [String: SubscriptionState] {
+        get {
+            let stored = defaults?.dictionary(forKey: key("subscriptionStates")) as? [String: String] ?? [:]
+            return stored.compactMapValues(SubscriptionState.init(rawValue:))
+        }
+        set { defaults?.set(newValue.mapValues(\.rawValue), forKey: key("subscriptionStates")) }
+    }
+
     var lastLimitCheck: Date? {
         get { defaults?.object(forKey: key("lastLimitCheck")) as? Date }
         set { defaults?.set(newValue, forKey: key("lastLimitCheck")) }
