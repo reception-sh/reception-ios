@@ -14,7 +14,10 @@ final class StoreSubscriptionsTests: XCTestCase {
         // A trial that turned paid and was then cancelled between two checks.
         XCTAssertEqual(StoreSubscriptions.event(from: .trial, to: .cancelled), "subscription_cancelled")
         XCTAssertEqual(StoreSubscriptions.event(from: .active, to: .billingIssue), "billing_issue")
-        XCTAssertEqual(StoreSubscriptions.event(from: .trialCancelled, to: .expired), "subscription_expired")
+        XCTAssertEqual(StoreSubscriptions.event(from: .trialCancelled, to: .expired), "trial_expired")
+        // A trial that was cancelled and ran out between two checks.
+        XCTAssertEqual(StoreSubscriptions.event(from: .trial, to: .expired), "trial_expired")
+        XCTAssertEqual(StoreSubscriptions.event(from: .cancelled, to: .expired), "subscription_expired")
         XCTAssertEqual(StoreSubscriptions.event(from: .billingIssue, to: .expired), "subscription_expired")
     }
 

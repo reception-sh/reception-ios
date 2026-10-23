@@ -9,17 +9,19 @@ internal enum SubscriptionState: String {
 /// failed payment without the app writing code or a server receiving App Store notifications.
 internal enum StoreSubscriptions {
     /// Events Reception reports on its own; the app never needs to track them.
-    static let events: Set<String> = ["trial_cancelled", "subscription_cancelled", "subscription_expired", "billing_issue"]
+    static let events: Set<String> = [
+        "trial_cancelled", "trial_expired", "subscription_cancelled", "subscription_expired", "billing_issue",
+    ]
 
     /// The event a change from `old` to `new` means. A subscription seen for the first time is only remembered,
-    /// so updating the SDK never reports old history.
+    /// so updating the SDK never reports old history. A trial that runs out never was paid, so it has its own event.
     static func event(from old: SubscriptionState?, to new: SubscriptionState) -> String? {
         guard let old, old != new else { return nil }
         switch new {
         case .trialCancelled: return old == .trial ? "trial_cancelled" : nil
         case .cancelled: return old == .expired ? nil : "subscription_cancelled"
         case .billingIssue: return old == .expired ? nil : "billing_issue"
-        case .expired: return "subscription_expired"
+        case .expired: return old == .trial || old == .trialCancelled ? "trial_expired" : "subscription_expired"
         case .trial, .active: return nil
         }
     }
