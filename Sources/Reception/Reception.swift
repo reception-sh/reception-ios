@@ -175,6 +175,7 @@ public final class Reception {
         shared.advancePresentationRevision()
         shared.logoutRevocations.resumed(api: api)
         shared.unreadMonitor.setActive(UIApplication.shared.applicationState == .active)
+        if UIApplication.shared.applicationState == .active { shared.session?.registerIfNeeded() }
         shared.applicationLifecycle.start()
         shared.refreshPaywalls()
         shared.checkSubscriptions()
@@ -236,6 +237,8 @@ public final class Reception {
             return false
         }
         Log.debug("Push payload recognized, conversation \(id)")
+        // The service wrote to this device, so the chat exists even if nobody here has written yet.
+        session?.store.hasConversation = true
         if openChat { self.openChat() }
         refreshUnread()
         return true
@@ -428,7 +431,7 @@ public final class Reception {
 
     internal func refreshUnread(updateDevice: Bool = false, probe: Bool = false) {
         if updateDevice { cancelUnreadRefresh() }
-        guard session?.store.hasStartedChat == true, session?.halt == nil || probe, refreshTask == nil else { return }
+        guard session?.isRegistered == true, session?.halt == nil || probe, refreshTask == nil else { return }
         let id = UUID()
         refreshId = id
         refreshTask = Task {

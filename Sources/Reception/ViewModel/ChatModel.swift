@@ -156,9 +156,9 @@ internal final class ChatModel {
         }
     }
     func refreshUnread(updateDevice: Bool = false, probe: Bool = false) async {
-        guard let session, current, session.store.hasStartedChat,
-              session.halt == nil || probe, session.isRegistered,
+        guard let session, current, session.halt == nil || probe, session.isRegistered,
               probe || session.retries["unread"]?.stopped != true else { return }
+        let started = session.store.hasStartedChat
         defer { if current, !Task.isCancelled { Reception.shared.unreadMonitor.reschedule() } }
         do {
             if !probe, let delay = session.retries["unread"]?.delay { try await Task.sleep(for: delay) }
@@ -188,6 +188,11 @@ internal final class ChatModel {
                 Reception.shared.setUnread(response.unreadCount)
             }
             Log.debug("Unread refresh, \(response.unreadCount) unread")
+            // The team wrote first: a chat that is already open starts loading and listening now.
+            if !started, response.hasConversation, isChatActive {
+                startPolling()
+                Task { await load() }
+            }
         } catch {
             if let error = error as? ReceptionAPIError, error.code != "cancelled", error.code != "session_halted", !error.isCooldown {
                 if probe && error.status == 403 && error.code == "blocked" {

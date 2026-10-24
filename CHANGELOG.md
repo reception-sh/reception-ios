@@ -3,6 +3,17 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] — 2026-10-24
+
+### Changed
+
+- The device registers with Reception when the app launches or returns to the foreground, not only when the person first writes, so every install appears in the dashboard's Users page and the team can start a conversation. Nothing is sent before `configure`; registration carries the same device details as before.
+- A registered device checks for unread messages on launch and foreground even before the person has written, and a tapped notification counts as a conversation. A conversation the team started therefore loads in the chat, polls and badges like one the person started. Before, the app ignored the team's message until the person wrote first.
+
+### Fixed
+
+- Device preferences (paywalls, language, badge setting) synchronize for a registered device that has not written yet.
+
 ## [1.5.0] — 2026-10-23
 
 ### Added

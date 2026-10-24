@@ -12,6 +12,7 @@ internal final class DeviceSession {
     var credentials: SessionCredentials?
     var credentialsUnsaved = false
     var registration: Task<String, Error>?
+    private var launchRegistration: Task<Void, Never>?
     var refresh: Task<String, Error>?
     var refreshBackoff: Task<Void, Error>?
     var refreshFailures = 0
@@ -122,7 +123,7 @@ internal final class DeviceSession {
     }
 
     private func retryPreferencesIfNeeded() {
-        guard !invalidated, halt == nil, isRegistered, !preferenceRetry.stopped, store.hasStartedChat, preferencesNeedSync, preferenceRetryTask == nil,
+        guard !invalidated, halt == nil, isRegistered, !preferenceRetry.stopped, preferencesNeedSync, preferenceRetryTask == nil,
               UIApplication.shared.applicationState == .active else { return }
         let id = UUID()
         preferenceRetryID = id
@@ -178,10 +179,26 @@ internal final class DeviceSession {
         }
     }
 
+    /// Registers a device the team cannot reach yet, once per launch or foreground; a failure waits for the next one.
+    /// Registration carries no push token, so the unread refresh that follows sends it with the device update.
+    func registerIfNeeded() {
+        guard !invalidated, halt == nil, !isRegistered, launchRegistration == nil else { return }
+        launchRegistration = Task {
+            defer { launchRegistration = nil }
+            do {
+                _ = try await RequestContext.$launch.withValue(true) { try await token() }
+                if self === Reception.shared.session { Reception.shared.refreshUnread(updateDevice: true) }
+            } catch {
+                Log.debug("Launch registration deferred to the next foreground")
+            }
+        }
+    }
+
     func becameActive() {
         preferenceRetry.foreground()
         for key in retries.keys { retries[key]?.foreground() }
         if halt == nil {
+            registerIfNeeded()
             retryPreferencesIfNeeded()
             if self === Reception.shared.session {
                 Reception.shared.chatModel().retryFailedAutomatically()

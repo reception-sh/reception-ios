@@ -19,7 +19,7 @@ final class AutomationRegistrationTests: XCTestCase {
         return DeviceSession(api: api, store: store)
     }
 
-    func testOnlyAnAutomationEventRegistersBeforeTheUserWrites() async throws {
+    func testAnUnusedDeviceRegistersOnlyAtLaunchForASendOrForAnAutomationEvent() async throws {
         StubURLProtocol.install { request in
             request.method == "POST" && request.path == "/v1/devices"
                 ? .init(body: #"{"token":"automation-token","sessionSecret":"automation-secret","verifiedUserId":null}"#)
@@ -30,7 +30,7 @@ final class AutomationRegistrationTests: XCTestCase {
 
         do {
             _ = try await session.token()
-            XCTFail("Without a user send or an automation event, no device may be registered")
+            XCTFail("Outside a launch, a user send or an automation event, no device may be registered")
         } catch let error as ReceptionAPIError {
             XCTAssertEqual(error.code, "chat_not_started")
         }
@@ -42,6 +42,10 @@ final class AutomationRegistrationTests: XCTestCase {
         XCTAssertEqual(StubURLProtocol.requests.map(\.path), ["/v1/devices"])
         XCTAssertTrue(session.isRegistered)
         XCTAssertFalse(session.store.hasStartedChat, "Registering for an automation does not start the chat")
+        // Once registered, the device may ask the service, so a conversation the team started can be found.
+        let again = try await session.token()
+        XCTAssertEqual(again, "automation-token")
+        XCTAssertEqual(StubURLProtocol.requests.count, 1)
     }
 
     func testEventNamesFollowTheServiceRule() {

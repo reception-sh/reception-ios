@@ -56,4 +56,6 @@ internal enum RequestContext {
     @TaskLocal static var probe: RequestProbe?
     /// Set while an automation event is sent: it may register the device before the user has written.
     @TaskLocal static var automation = false
+    /// Set while the app launches or returns to the foreground: an unused device registers so the team can reach it.
+    @TaskLocal static var launch = false
 }
