@@ -8,10 +8,11 @@ internal enum Theme {
     static let headerFadeOverlap: CGFloat = 64
     static let sheetTopInset: CGFloat = 20
     static let layoutSettleDuration = 0.25
-    static let deliveryStatusAnimation = Animation.easeOut(duration: 0.2)
-    static let messageAnimation = Animation.easeOut(duration: 0.25)
+    static let deliveryStatusAnimation = Animation.smooth(duration: 0.2)
+    // Springs, like Messages: a bubble lands with a little give instead of easing to a stop.
+    static let messageAnimation = Animation.spring(duration: 0.3, bounce: 0.15)
     static let automationTypingDuration = Duration.milliseconds(800)
-    static let sendButtonAnimation = Animation.easeOut(duration: 0.2)
+    static let sendButtonAnimation = Animation.snappy(duration: 0.2)
     static let uploadProgressHorizontalInset: CGFloat = 24
     static let sendingDotRestingOpacity = 0.35
     static let sendingDotOpacityRange = 0.65

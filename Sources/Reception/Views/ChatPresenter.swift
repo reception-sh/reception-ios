@@ -15,7 +15,16 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
             name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(retryPresentation),
             name: UIScene.didActivateNotification, object: nil)
+        // A downward swipe over the messages while typing dismisses the keyboard, never the whole sheet: the sheet
+        // refuses interactive dismissal while the keyboard is up and allows it again as soon as it is gone.
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow),
+            name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification, object: nil)
     }
+
+    @objc private func keyboardWillShow() { hostingController?.isModalInPresentation = true }
+    @objc private func keyboardWillHide() { hostingController?.isModalInPresentation = false }
 
     /// Presents the chat, or arranges for it: after a dismissal in progress, or once a window is active. Answers
     /// false only when another screen is still opening, so a caller that can wait tries again.

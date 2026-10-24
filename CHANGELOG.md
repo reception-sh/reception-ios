@@ -12,6 +12,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Swiping down over the messages while typing now dismisses the keyboard instead of the whole chat sheet; the sheet can be swiped away again once the keyboard is gone.
+- On iOS 26 the messages fade out under the chat title instead of being cut off by a hard band, and messages show through the glass composer all the way to the bottom of the sheet.
+- Links in messages are tappable, a long press on a bubble offers Copy, a reply that arrives while the chat is open gives a light haptic, and bubbles and the send button animate with springs.
+- The chat moves like Messages: on iOS 18 and later the newest message stays pinned above the composer while the keyboard opens and closes, and new messages scroll in with an animation instead of a jump. iOS 17 scrolls into place once the keyboard has settled.
 - Device preferences (paywalls, language, badge setting) synchronize for a registered device that has not written yet.
 
 ## [1.5.0] — 2026-10-23

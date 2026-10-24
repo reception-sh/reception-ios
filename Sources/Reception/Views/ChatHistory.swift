@@ -28,12 +28,20 @@ internal struct ChatHistory: View {
                 .overlay { if model.messages.isEmpty { EmptyState() } }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in scrollRevision += 1 }
                 .defaultScrollAnchor(.bottom)
+                .pinnedToBottomOnSizeChanges()
                 .scrollClipDisabled()
                 .scrollDismissesKeyboard(.interactively)
+                .withoutScrollEdgeEffects()
                 .onChange(of: model.isTyping) { scrollRevision += 1 }
                 .onChange(of: model.messages.last?.id) { scrollRevision += 1 }
+                // A reply that lands while the chat is open taps the person lightly; the first load stays quiet.
+                .sensoryFeedback(.impact(weight: .light), trigger: model.messages.last(where: { $0.sender == "AGENT" })?.id) { previous, current in
+                    previous != nil && current != nil && model.isVisible
+                }
                 .onChange(of: model.isLoading) { if !model.isLoading { scrollRevision += 1 } }
                 .task {
+                    // iOS 18 keeps the bottom pinned while the keyboard moves; iOS 17 needs a nudge once it has settled.
+                    guard #unavailable(iOS 18) else { return }
                     for await _ in NotificationCenter.default.notifications(named: UIResponder.keyboardDidChangeFrameNotification).map({ _ in () }) {
                         scrollRevision += 1
                     }
@@ -42,15 +50,15 @@ internal struct ChatHistory: View {
                     // Geometry callbacks invalidate this task after the new rows/insets have laid out.
                     await Task.yield()
                     guard !Task.isCancelled, let lastId = model.isTyping ? "support-typing" : model.messages.last?.id else { return }
-                    proxy.scrollTo(lastId, anchor: .bottom)
+                    withAnimation(Theme.messageAnimation) { proxy.scrollTo(lastId, anchor: .bottom) }
                     do { try await Task.sleep(for: .seconds(Theme.layoutSettleDuration)) } catch { return }
                     guard !Task.isCancelled else { return }
-                    proxy.scrollTo(lastId, anchor: .bottom)
+                    withAnimation(Theme.messageAnimation) { proxy.scrollTo(lastId, anchor: .bottom) }
                 }
             }
             .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { _ in
-                // Follow keyboard insets on iOS 18 after the viewport has changed.
-                scrollRevision += 1
+                // Follow keyboard insets on iOS 17 after the viewport has changed; iOS 18 pins the bottom itself.
+                if #unavailable(iOS 18) { scrollRevision += 1 }
             }
             .mask(alignment: .top) {
                 VStack(spacing: Theme.zero) {
@@ -59,7 +67,8 @@ internal struct ChatHistory: View {
                     Rectangle()
                 }
                 .padding(.top, -Theme.headerFadeOverlap)
-                .padding(.bottom, -composerHeight)
+                // Rows drawn past the frame show through the glass composer down to the sheet's edge, like Messages.
+                .padding(.bottom, -(composerHeight + Self.homeIndicatorInset))
             }
             .safeAreaInset(edge: .bottom, spacing: Theme.zero) {
                 VStack(spacing: Theme.zero) {
@@ -88,6 +97,13 @@ internal struct ChatHistory: View {
         }
     }
 
+    /// The sheet reaches the bottom of the window, so the window's inset is the strip below the composer; the keyboard
+    /// never changes it, unlike the view's own safe area.
+    private static var homeIndicatorInset: CGFloat {
+        UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows)
+            .first(where: \.isKeyWindow)?.safeAreaInsets.bottom ?? Theme.zero
+    }
+
     private func row(_ message: Message, at index: Int, width: CGFloat) -> some View {
         let isLast = message.id == model.messages.last?.id
         return MessageRow(message: message, availableWidth: width, layout: model.messageLayout(at: index), openReview: { url, action in model.openReview(url, messageId: message.id, using: action) },
@@ -102,5 +118,19 @@ internal struct ChatHistory: View {
             if isLast { scrollRevision += 1 }
         }
         .transition(AnyTransition.move(edge: .bottom).combined(with: .opacity))
+    }
+}
+
+private extension View {
+    /// Like Messages, the newest message stays put while the keyboard moves or a message arrives: iOS 18 keeps the
+    /// bottom anchored through size changes instead of scrolling back after the fact.
+    @ViewBuilder func pinnedToBottomOnSizeChanges() -> some View {
+        if #available(iOS 18, *) { defaultScrollAnchor(.bottom, for: .sizeChanges) } else { self }
+    }
+
+    /// iOS 26 paints hard bands where content scrolls under the bar and the composer; the history fades its own
+    /// top instead, and the glass composer shows what passes beneath it.
+    @ViewBuilder func withoutScrollEdgeEffects() -> some View {
+        if #available(iOS 26, *) { scrollEdgeEffectHidden() } else { self }
     }
 }

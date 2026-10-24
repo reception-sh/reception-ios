@@ -114,9 +114,13 @@ internal struct MessageBubble: View {
     private var imageWidth: CGFloat { availableWidth * Theme.imageWidthFraction }
 
     private var textBubble: some View {
-        Text(message.text).font(Theme.bodyFont)
-            .foregroundStyle(message.sender == "USER" ? Theme.outgoingForeground : Theme.incomingForeground)
+        let foreground = message.sender == "USER" ? Theme.outgoingForeground : Theme.incomingForeground
+        return Text(LinkedText.attributed(message.text, linkColor: foreground)).font(Theme.bodyFont)
+            .foregroundStyle(foreground)
             .padding(.horizontal, Theme.bubbleHorizontal).padding(.vertical, Theme.bubbleVertical)
             .background(message.sender == "USER" ? Theme.outgoingBackground(olderBy: olderOutgoingCount, in: environment) : Theme.secondary, in: BubbleShape())
+            .contextMenu {
+                Button { UIPasteboard.general.string = message.text } label: { Label(Theme.string("Copy"), systemImage: "doc.on.doc") }
+            }
     }
 }
