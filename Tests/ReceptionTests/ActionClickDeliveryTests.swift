@@ -79,6 +79,37 @@ final class ActionClickDeliveryTests: XCTestCase {
         XCTAssertEqual(session.credentials?.sessionSecret, "same-secret")
     }
 
+    @MainActor
+    func testLinkOutcomeIsSentAndClearedAfterDeliveryOr404() async throws {
+        StubURLProtocol.install { request in
+            let body = request.body.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: String] }
+            return body?["messageId"] == "gone"
+                ? .init(status: 404, body: #"{"error":{"code":"action_not_found","message":"Not found"}}"#) : .init()
+        }
+        let store = DeviceStore(scope: UUID().uuidString, credentialStorage: .init(
+            read: { _ in .missing }, save: { _, _ in true }, delete: { _ in true }))
+        store.hasStartedChat = true
+        let session = DeviceSession(api: ReceptionAPI(appId: "app_abcdefghijklmnopqrstuv",
+            baseURL: try XCTUnwrap(URL(string: "https://reception.test"))), store: store)
+        session.credentials = SessionCredentials(sessionSecret: "secret", verifiedUserId: nil)
+        session.accessToken = "token"
+        defer { session.invalidate(); StubURLProtocol.uninstall() }
+
+        session.recordActionClick("link", outcome: .opened)
+        await session.actionClickTask?.value
+        session.recordActionClick("review")
+        await session.actionClickTask?.value
+        session.recordActionClick("gone", outcome: .failed)
+        await session.actionClickTask?.value
+
+        let bodies = try StubURLProtocol.requests.map {
+            try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap($0.body)) as? [String: String])
+        }
+        XCTAssertEqual(bodies, [["messageId": "link", "outcome": "opened"], ["messageId": "review"],
+                                ["messageId": "gone", "outcome": "failed"]])
+        XCTAssertTrue(store.pendingActionClicks.isEmpty)
+        XCTAssertTrue(store.actionClickOutcomes.isEmpty)
+    }
 }
 
 private final class ActionClickProtocol: URLProtocol, @unchecked Sendable {

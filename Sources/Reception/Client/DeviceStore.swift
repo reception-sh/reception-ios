@@ -33,7 +33,8 @@ internal final class DeviceStore {
         chatCache.clear()
         teamProfileCache.clear()
         for name in ["cursor", "draftText", "hasConversation", "hasStartedChat",
-                     "conversationStatus", "lastMessageAt", "pushActive", "unreadPolling", "pendingActionClicks"] { defaults?.removeObject(forKey: key(name)) }
+                     "conversationStatus", "lastMessageAt", "pushActive", "unreadPolling", "pendingActionClicks",
+                     "actionClickOutcomes"] { defaults?.removeObject(forKey: key(name)) }
         chatRevision = revision
     }
 
@@ -105,6 +106,12 @@ internal final class DeviceStore {
         set { if acceptsDrafts { defaults?.set(newValue, forKey: key("pendingActionClicks")) } }
     }
 
+    /// Link tap results by message ID, beside the queue so its stored format stays a plain list.
+    var actionClickOutcomes: [String: String] {
+        get { defaults?.dictionary(forKey: key("actionClickOutcomes")) as? [String: String] ?? [:] }
+        set { if acceptsDrafts { defaults?.set(newValue, forKey: key("actionClickOutcomes")) } }
+    }
+
     var draftText: String {
         get { defaults?.string(forKey: key("draftText")) ?? "" }
         set { if acceptsDrafts { defaults?.set(newValue, forKey: key("draftText")) } }
@@ -153,7 +160,7 @@ internal final class DeviceStore {
         teamProfileCache.clear()
         for name in ["chatRevision", "cursor", "pending", "draftText", "hasConversation", "hasStartedChat",
                      "conversationStatus", "lastMessageAt", "pushActive", "unreadPolling", "pendingActionClicks",
-                     "cooldowns", "lastLimitCheck"] { defaults?.removeObject(forKey: key(name)) }
+                     "actionClickOutcomes", "cooldowns", "lastLimitCheck"] { defaults?.removeObject(forKey: key(name)) }
     }
     static func generation(for scope: String, rotate: Bool = false) -> String {
         let defaults = UserDefaults(suiteName: "com.reception.sdk")

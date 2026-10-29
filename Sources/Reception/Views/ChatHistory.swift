@@ -91,6 +91,8 @@ internal struct ChatHistory: View {
     private func row(_ message: Message, at index: Int, width: CGFloat) -> some View {
         let isLast = message.id == model.messages.last?.id
         return MessageRow(message: message, availableWidth: width, layout: model.messageLayout(at: index), openReview: { url, action in model.openReview(url, messageId: message.id, using: action) },
+                          linkOpensInApp: message.linkCardURL.map { model.isHostLink($0) } ?? false,
+                          openLink: { url in model.openLink(url, messageId: message.id) }, openTextLink: model.openTextLink,
                           canOpenPaywall: model.canOpenPaywall(message), openPaywall: { model.openPaywall(message) },
                           retryAvailability: model.retryAvailability(for: message),
                           cancelRetry: { model.cancelAutomaticRetry(messageId: message.id) }) {

@@ -29,6 +29,8 @@ internal enum DeviceInfo {
         body["paywalls"] = Reception.shared.availablePaywalls.map(\.payload)
         body["metadata"] = identity.metadata
         body["updatesAppBadge"] = Reception.shared.updatesAppBadge
+        body["urlSchemes"] = Array(LinkPolicy.main.hostSchemes.prefix(20))
+        body["handlesLinks"] = Reception.shared.onLink != nil
         if let subscribed = Reception.shared.paidAccess.current { body["subscribed"] = subscribed }
         body["appearance"] = HostAppearanceReport.payload(Reception.shared.appearance,
                                                           usesRemoteAppearance: Reception.shared.usesRemoteAppearance)

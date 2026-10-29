@@ -60,6 +60,17 @@ public final class Reception {
     /// entries (`presentable == false`) that are listed for the team but never opened.
     public private(set) var availablePaywalls: [ReceptionPaywall] = []
     public var onPaywall: ((String) -> Void)?
+    /// Called when someone taps a link card. The SDK first closes the chat it presented (a `ReceptionChatView` you
+    /// placed yourself stays open), then calls the handler with the URL. Return `true` when you handled the URL, for
+    /// example by switching to a screen, or `false` to let the system open it. Without a handler, links to your app's
+    /// own URL schemes close the chat and open through the system; other links open with the chat left open, web links
+    /// in Safari over the chat (see `opensWebLinksInApp`).
+    public var onLink: (@MainActor (URL) -> Bool)? {
+        didSet { session?.preferencesChanged() }
+    }
+    /// Web links from link cards and message text open in an in-app Safari sheet over the chat. Set false to hand
+    /// them to the system (Safari or another app's universal link).
+    public var opensWebLinksInApp = true
     private var registeredPaywalls: [ReceptionPaywall] = []
     private var paywallCheck: Task<Void, Never>?
     private var paywallGeneration = 0

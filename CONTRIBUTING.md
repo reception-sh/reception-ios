@@ -77,6 +77,18 @@ an empty array. Without `paywallAvailability` it equals `paywalls`. REVIEW and P
 with `{ "messageId": "…" }`; message responses expose nullable `actionClickedAt`.
 Clicks are persisted and retried independently of host paywall presentation, not purchase receipts.
 
+## Link cards
+
+Run an example app in Debug against your test app (or a local backend, see above) and send a link from the dashboard's composer to yourself. Check each path:
+
+- A web link, from a card or tapped in message text, opens in a Safari sheet over the chat, and Done returns to the open chat; with `Reception.shared.opensWebLinksInApp = false` it opens through the system instead.
+- An App Store link (including an offer-code link) opens through the system and the chat stays open.
+- Register a URL scheme in the example's `Info.plist` (`CFBundleURLTypes`), send a link with that scheme, and verify that the chat closes before the app's URL handler receives it. The card shows a chevron instead of the outward arrow.
+- Set `Reception.shared.onLink` and verify that the chat closes before the handler runs; return `false` to check that the system then opens the link.
+- With `onLink` returning `false` for a custom scheme that no installed app handles, the dashboard shows the failed tap.
+
+Device POST/PATCH payloads include `urlSchemes` (lowercased, unique, in `Info.plist` order, the first 20) and `handlesLinks`. LINK receipts share `POST /v1/conversation/action-click` and add `outcome` (`handled`, `opened` or `failed`); queued outcomes are stored beside the receipt queue and retried with it. `http` and `https` addresses in message text are tappable and send nothing.
+
 ## Releases
 
 Customers install tagged versions with the rule **Up to Next Major Version**; commits on `main` reach nobody until a tag exists.

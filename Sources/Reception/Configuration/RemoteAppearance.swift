@@ -31,7 +31,7 @@ internal struct RemoteAppearance: Codable {
         var offset: RemoteOffset?
     }
     struct RemoteOffset: Codable { var x: Double; var y: Double }
-    struct RemoteCards: Codable { var review: RemoteCard?; var offer: RemoteCard? }
+    struct RemoteCards: Codable { var review: RemoteCard?; var offer: RemoteCard?; var link: RemoteCard? }
     struct RemoteCard: Codable {
         var icon: String?
         var iconImage: String?
@@ -108,6 +108,8 @@ internal struct RemoteAppearance: Codable {
             hidesIcon: isHidden("reviewIcon"), hidesAccessory: isHidden("reviewAccessory"))
         result.offerCard = (cards?.offer ?? RemoteCard()).style(accent: accent, onAccent: onAccent,
             hidesIcon: isHidden("offerIcon"), hidesAccessory: isHidden("offerAccessory"))
+        result.linkCard = (cards?.link ?? RemoteCard()).style(accent: accent, onAccent: onAccent,
+            hidesIcon: isHidden("linkIcon"), hidesAccessory: isHidden("linkAccessory"))
         return result
     }
 

@@ -65,6 +65,7 @@ extension DeviceSession {
             let badge = Reception.shared.updatesAppBadge
             let paywalls = Reception.shared.availablePaywalls
             let language = ReceptionLocalization.appLanguage
+            let handlesLinks = Reception.shared.onLink != nil
             let identityToken = stagedIdentityToken
             let response: Response
             do {
@@ -85,6 +86,7 @@ extension DeviceSession {
             synchronizedPaywalls = paywalls
             synchronizedAppBadge = badge
             synchronizedLanguage = language
+            synchronizedHandlesLinks = handlesLinks
             Log.info("Device registered")
             return response.token
         }

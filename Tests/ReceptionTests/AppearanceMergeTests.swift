@@ -122,6 +122,16 @@ final class AppearanceMergeTests: XCTestCase {
         XCTAssertTrue(legacy.reviewCard.icon?.isHidden == true)
     }
 
+    func testLinkCardReadsItsOwnStyleAndVisibility() throws {
+        let result = try remote(#"{"visibility":{"linkAccessory":false},"cards":{"link":{"icon":"safari","iconSize":40}}}"#)
+            .applying(to: localAppearance())
+        guard case .symbol("safari") = result.linkCard.icon else { return XCTFail("link icon not applied") }
+        XCTAssertTrue(result.linkCard.accessory?.isHidden == true)
+        XCTAssertEqual(result.linkCard.iconSize, 28)
+        XCTAssertNil(result.reviewCard.icon)
+        XCTAssertNil(result.offerCard.accessory)
+    }
+
     func testRemoteCloseSymbolOverridesHostImageOnlyWhenValid() throws {
         var local = localAppearance()
         local.closeImage = Image(systemName: "star")

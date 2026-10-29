@@ -11,6 +11,7 @@ internal struct Message: Identifiable {
     let createdAt: Date
     var kind: String = "TEXT"
     var reviewUrl: URL?
+    var linkUrl: URL?
     var paywallId: String?
     var paywallTitle: String?
     /// Agent-chosen button text; nil shows the localized default.
@@ -33,10 +34,15 @@ internal struct Message: Identifiable {
     // Retain the photo count even when a cached JPEG cannot be decoded.
     var expectedImageCount: Int?
     var hasConfirmedAttachments: Bool { seq != nil && !attachments.isEmpty }
+    /// The URL a link card opens; nil shows the message as text.
+    var linkCardURL: URL? {
+        guard kind == "LINK", let linkUrl, LinkPolicy.isAllowed(linkUrl) else { return nil }
+        return linkUrl
+    }
 }
 
 extension Message: Decodable {
-    private enum CodingKeys: String, CodingKey { case id, clientId, seq, sender, text, attachments, createdAt, kind, reviewUrl, paywallId, paywallTitle, buttonLabel, authorId, actionClickedAt }
+    private enum CodingKeys: String, CodingKey { case id, clientId, seq, sender, text, attachments, createdAt, kind, reviewUrl, linkUrl, paywallId, paywallTitle, buttonLabel, authorId, actionClickedAt }
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(String.self, forKey: .id)
@@ -53,5 +59,7 @@ extension Message: Decodable {
         authorId = try values.decodeIfPresent(String.self, forKey: .authorId)
         actionClickedAt = try values.decodeIfPresent(Date.self, forKey: .actionClickedAt)
         reviewUrl = try values.decodeIfPresent(URL.self, forKey: .reviewUrl)
+        // A malformed link shows the message as text instead of failing the whole page.
+        linkUrl = (try? values.decodeIfPresent(String.self, forKey: .linkUrl)).flatMap { URL(string: $0) }
     }
 }

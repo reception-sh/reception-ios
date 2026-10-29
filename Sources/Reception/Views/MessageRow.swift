@@ -5,6 +5,10 @@ internal struct MessageRow: View {
     let availableWidth: CGFloat
     let layout: MessageLayout
     let openReview: (URL, OpenURLAction) -> Void
+    /// The link card leads back into the host app.
+    let linkOpensInApp: Bool
+    let openLink: (URL) -> Void
+    let openTextLink: (URL) -> OpenURLAction.Result
     let canOpenPaywall: Bool
     let openPaywall: () -> Void
     let retryAvailability: RetryAvailability
@@ -40,6 +44,6 @@ internal struct MessageRow: View {
     }
 
     private func bubble(width: CGFloat) -> some View {
-        MessageBubble(message: message, availableWidth: width, showsDeliveryStatus: layout.showsDeliveryStatus, olderOutgoingCount: layout.olderOutgoingCount, openReview: openReview, canOpenPaywall: canOpenPaywall, openPaywall: openPaywall, retryAvailability: retryAvailability, cancelRetry: cancelRetry, retry: retry)
+        MessageBubble(message: message, availableWidth: width, showsDeliveryStatus: layout.showsDeliveryStatus, olderOutgoingCount: layout.olderOutgoingCount, openReview: openReview, linkOpensInApp: linkOpensInApp, openLink: openLink, openTextLink: openTextLink, canOpenPaywall: canOpenPaywall, openPaywall: openPaywall, retryAvailability: retryAvailability, cancelRetry: cancelRetry, retry: retry)
     }
 }

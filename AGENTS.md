@@ -75,8 +75,10 @@ The host app owns entry buttons, settings rows, positioning and unread badges.
 The host registers `Reception.shared.paywalls` and presents its own paywall from
 `onPaywall`; the SDK keeps chat open and emits `.paywallOpened`. An optional
 `paywallAvailability` check filters them into `availablePaywalls`, which drives cards and
-the device sync; the host calls `refreshPaywalls(invalidate: true)` after subscription changes. Action receipts use
-`conversation/action-click` and record an open, never a purchase.
+the device sync; the host calls `refreshPaywalls(invalidate: true)` after subscription changes. Link cards open
+with chat left open, web pages in an in-app Safari sheet (`opensWebLinksInApp`, also for links in message text), App Store
+and other links through the system; links to the host's own URL schemes and taps with `onLink` set close the
+SDK's chat first. Action receipts use `conversation/action-click` and record an open, never a purchase.
 
 **Distinct identity:** The chat follows Apple's patterns for grouping,
 status rows and glass composers, but remains a distinct support chat rather than a

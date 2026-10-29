@@ -1,3 +1,4 @@
+import SafariServices
 import SwiftUI
 import UIKit
 
@@ -71,8 +72,9 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
         return !front.isBeingPresented && !front.isBeingDismissed
     }
 
+    /// Answers false, without calling `completion`, when the SDK has not presented the chat.
     @discardableResult
-    func dismiss() -> Bool {
+    func dismiss(completion: (() -> Void)? = nil) -> Bool {
         presentationPending = false
         presentAfterDismiss = false
         guard let controller = hostingController else { return false }
@@ -82,9 +84,22 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
             guard let self else { return }
             self.dismissalCompleted = true
             self.finishDismissalIfReady()
+            completion?()
         }
         hostingController = nil
         Log.debug("Chat dismissed")
+        return true
+    }
+
+    /// Shows a web page in Safari as a sheet in front: over the chat the SDK presented, so Done returns to it, or over
+    /// the front screen for a host-embedded chat or after the chat closed. False when no screen can present right now.
+    func presentWebPage(_ url: URL) -> Bool {
+        guard let front = frontController(from: hostingController ?? window?.rootViewController),
+              !front.isBeingPresented else { return false }
+        let safari = SFSafariViewController(url: url)
+        safari.modalPresentationStyle = .pageSheet
+        front.present(safari, animated: true)
+        Log.debug("Web page presented")
         return true
     }
 
@@ -119,8 +134,10 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
         return scene.windows.first(where: \.isKeyWindow) ?? scene.windows.first
     }
 
-    private var presentingController: UIViewController? {
-        var controller = window?.rootViewController
+    private var presentingController: UIViewController? { frontController(from: window?.rootViewController) }
+
+    private func frontController(from root: UIViewController?) -> UIViewController? {
+        var controller = root
         // A paywall that is closing cannot present: the chat would vanish with it.
         while let presented = controller?.presentedViewController, !presented.isBeingDismissed { controller = presented }
         return controller

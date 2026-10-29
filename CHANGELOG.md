@@ -3,6 +3,18 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Link cards: a message from your team can carry a button that opens a link, such as a website, an App Store page or offer-code link, an email address or phone number, or a screen in your app through its URL scheme. Links to your app's own URL schemes (from `CFBundleURLTypes` in `Info.plist`) close the chat and then open, so your app's URL handler receives them; other links open with the chat left open. A card whose URL is missing or not allowed shows as plain text.
+- `Reception.shared.onLink` lets your app handle link card taps itself, for example to switch tabs or to handle universal links of your own domain, which iOS does not deliver back into the same app. The SDK closes the chat it presented, then calls the handler; return `true` when you handled the URL, or `false` to let the system open it.
+- `ReceptionEvent.linkOpened` is emitted when someone taps a link card. Apps with an exhaustive `switch` over `ReceptionEvent` need to add this case.
+- Web addresses (`http` and `https`) in message text are tappable for both senders.
+- Web links from link cards and message text open in an in-app Safari sheet over the chat, so people return to the conversation with Done. App Store links still open the App Store. Set `Reception.shared.opensWebLinksInApp = false` to hand web links to the system (Safari or another app's universal link) instead.
+- Device registration and updates report the app's URL schemes (`urlSchemes`) and whether `onLink` is set (`handlesLinks`), so the dashboard only sends links to an app screen that the app can open. Setting or clearing `onLink` updates a registered device.
+- A link card's receipt reports whether your handler took the link, the system opened it, or it could not be opened, so the dashboard can show a failed tap.
+
 ## [1.5.0] — 2026-10-23
 
 ### Added

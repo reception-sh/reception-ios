@@ -91,6 +91,7 @@ internal final class ChatCache {
         let text: String
         let kind: String?
         let reviewUrl: URL?
+        let linkUrl: URL?
         let paywallId: String?
         let paywallTitle: String?
         let buttonLabel: String?
@@ -120,14 +121,14 @@ internal final class ChatCache {
             paywallId = message.paywallId; paywallTitle = message.paywallTitle; buttonLabel = message.buttonLabel
             authorId = message.authorId
             actionClickedAt = message.actionClickedAt
-            kind = message.kind; reviewUrl = message.reviewUrl
+            kind = message.kind; reviewUrl = message.reviewUrl; linkUrl = message.linkUrl
             self.images = images
             expectedImageCount = message.expectedImageCount ?? message.images.count
         }
 
         var message: Message {
             Message(id: id, seq: seq, sender: sender, text: text, attachments: attachments,
-                    createdAt: createdAt, kind: kind ?? "TEXT", reviewUrl: reviewUrl,
+                    createdAt: createdAt, kind: kind ?? "TEXT", reviewUrl: reviewUrl, linkUrl: linkUrl,
                     paywallId: paywallId, paywallTitle: paywallTitle, buttonLabel: buttonLabel, authorId: authorId, actionClickedAt: actionClickedAt, status: seq != nil ? .sent : failed ? .failed : .sending,
                     awaitsManualRetry: seq == nil && awaitsManualRetry == true,
                     retryAfterLimitRelease: seq == nil && retryAfterLimitRelease == true,

@@ -52,6 +52,18 @@ internal final class ChatModel {
     var readCursor: ReadCursor?
     var reloadTask: Task<Void, Never>?
     var pollDeferred = false
+    /// Closes the chat the SDK presented, then continues; a host-embedded chat continues at once. Replaced in tests.
+    var closePresentedChat: (@escaping () -> Void) -> Void = { next in
+        if !Reception.shared.presenter.dismiss(completion: next) { next() }
+    }
+    /// Opens a link card's URL through the system and reports whether it was accepted. Replaced in tests.
+    var openExternal: @MainActor (URL, @escaping @MainActor @Sendable (Bool) -> Void) -> Void = { url, completion in
+        UIApplication.shared.open(url, options: [:], completionHandler: completion)
+    }
+    /// Shows a web link in Safari over the chat and reports whether a screen could present it. Replaced in tests.
+    var presentWebLink: @MainActor (URL) -> Bool = { Reception.shared.presenter.presentWebPage($0) }
+    /// A link tap is closing the chat; further link taps wait until it finished.
+    var isClosingForLink = false
     var canSend: Bool { current && (!sendingDisabled || session?.halt == .blocked) }
     var current: Bool { session != nil && session === Reception.shared.session && session?.invalidated == false }
 

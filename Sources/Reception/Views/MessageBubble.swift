@@ -7,6 +7,11 @@ internal struct MessageBubble: View {
     let showsDeliveryStatus: Bool
     let olderOutgoingCount: Int
     let openReview: (URL, OpenURLAction) -> Void
+    /// The link card leads back into the host app.
+    let linkOpensInApp: Bool
+    let openLink: (URL) -> Void
+    /// Web addresses in the text; review cards keep the system's handling.
+    let openTextLink: (URL) -> OpenURLAction.Result
     let canOpenPaywall: Bool
     let openPaywall: () -> Void
     let retryAvailability: RetryAvailability
@@ -29,6 +34,8 @@ internal struct MessageBubble: View {
                     }
                     if message.kind == "REVIEW", let url = message.reviewUrl {
                         ReviewCard(text: message.text, label: message.buttonLabel, url: url, openReview: openReview)
+                    } else if let url = message.linkCardURL {
+                        LinkCard(text: message.text, label: message.buttonLabel, url: url, isInApp: linkOpensInApp, openLink: openLink)
                     } else if message.kind == "PAYWALL" {
                         PaywallCard(text: message.text, label: message.buttonLabel, isAvailable: canOpenPaywall, openPaywall: openPaywall)
                     } else {
@@ -111,12 +118,16 @@ internal struct MessageBubble: View {
         .opacity(message.sender == "USER" && message.status == .sending && message.showsPending ? Theme.sendingOpacity : Theme.fullOpacity)
     }
 
+    private var textColor: Color { message.sender == "USER" ? Theme.outgoingForeground : Theme.incomingForeground }
+
     private var imageWidth: CGFloat { availableWidth * Theme.imageWidthFraction }
 
     private var textBubble: some View {
-        Text(message.text).font(Theme.bodyFont)
-            .foregroundStyle(message.sender == "USER" ? Theme.outgoingForeground : Theme.incomingForeground)
+        // Links keep the bubble's text color, underlined, so they stay readable on the accent color.
+        Text(LinkedText.attributed(message.text)).font(Theme.bodyFont)
+            .foregroundStyle(textColor).tint(textColor)
             .padding(.horizontal, Theme.bubbleHorizontal).padding(.vertical, Theme.bubbleVertical)
             .background(message.sender == "USER" ? Theme.outgoingBackground(olderBy: olderOutgoingCount, in: environment) : Theme.secondary, in: BubbleShape())
+            .environment(\.openURL, OpenURLAction(handler: openTextLink))
     }
 }

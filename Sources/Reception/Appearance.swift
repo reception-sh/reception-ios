@@ -69,6 +69,7 @@ extension Reception {
         internal var remoteCloseImage: URL?
         internal var reviewCard = CardStyle()
         internal var offerCard = CardStyle()
+        internal var linkCard = CardStyle()
 
         internal struct CardStyle {
             var icon: AppearanceIcon?
@@ -90,7 +91,7 @@ extension Reception {
 }
 
 public enum ReceptionEvent: Hashable {
-    case chatOpened, messageSent, imageSent, reviewOpened, paywallOpened
+    case chatOpened, messageSent, imageSent, reviewOpened, paywallOpened, linkOpened
     /// `Reception.shared.deleteData()` completed and local support data was reset.
     case dataDeleted
     /// The service rejected the token from `identify(token:)` with `identity_token_invalid`, `identity_token_expired`
