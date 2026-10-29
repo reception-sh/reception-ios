@@ -15,6 +15,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Device registration and updates report the app's URL schemes (`urlSchemes`) and whether `onLink` is set (`handlesLinks`), so the dashboard only sends links to an app screen that the app can open. Setting or clearing `onLink` updates a registered device.
 - A link card's receipt reports whether your handler took the link, the system opened it, or it could not be opened, so the dashboard can show a failed tap.
 
+### Fixed
+
+- `ReceptionChatView()` stays open when pushed through a navigation path (`NavigationStack(path:)` with `navigationDestination(for:)`). Before, the chat closed right after the push, and the app could crash on the next change of that path.
+
 ## [1.5.0] — 2026-10-23
 
 ### Added
