@@ -60,11 +60,6 @@ internal struct ChatHistory: View {
                 }
                 .onChange(of: model.isLoading) { if !model.isLoading { followNewest() } }
                 .task {
-                    for await _ in NotificationCenter.default.notifications(named: UIResponder.keyboardWillShowNotification).map({ _ in () }) {
-                        requestScroll()
-                    }
-                }
-                .task {
                     // iOS 18 keeps the bottom pinned while the keyboard moves; iOS 17 needs a nudge once it has settled.
                     guard #unavailable(iOS 18) else { return }
                     for await _ in NotificationCenter.default.notifications(named: UIResponder.keyboardDidChangeFrameNotification).map({ _ in () }) {
@@ -131,7 +126,8 @@ internal struct ChatHistory: View {
                             .padding(.bottom, Theme.small)
                             .transition(.opacity)
                     }
-                    Composer(chat: model)
+                    // Starting to write shows the newest message, like Messages.
+                    Composer(chat: model, onFocus: { requestScroll() })
                 }
                     .animation(Theme.messageAnimation, value: model.connection)
                     .animation(Theme.messageAnimation, value: model.composerCooldown)
@@ -187,8 +183,13 @@ internal struct ChatHistory: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { _ in
             if isLast { followNewest() }
         }
-        .onAppear { if isLast { scrollState.newest(message.id, isVisible: true) } }
-        .onDisappear { if isLast { scrollState.newest(message.id, isVisible: false) } }
+        // On screen means inside the scroll view's visible bounds: a lazy stack also builds rows just outside them, so
+        // onAppear would count the newest row as seen while the reader is further up.
+        .onGeometryChange(for: Bool.self) { proxy in
+            proxy.bounds(of: .scrollView)?.intersects(CGRect(origin: .zero, size: proxy.size)) ?? false
+        } action: { isVisible in
+            if isLast { scrollState.newest(message.id, isVisible: isVisible) }
+        }
         .transition(AnyTransition.move(edge: .bottom).combined(with: .opacity))
     }
 }

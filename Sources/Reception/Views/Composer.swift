@@ -4,7 +4,10 @@ import PhotosUI
 internal struct Composer: View {
     @Environment(\.isPresented) private var isPresented
     let chat: ChatModel
+    /// Runs when the person puts the cursor in the field; iOS restoring the keyboard after an app switch doesn't count.
+    private let onFocus: () -> Void
     @Bindable private var model: ComposerModel
+    @FocusState private var focused: Bool
     @State private var keyboardVisible = false
     @State private var fieldHeight: CGFloat = Theme.zero
 
@@ -15,7 +18,7 @@ internal struct Composer: View {
     private var hasContent: Bool { !model.text.isEmpty || !model.photos.isEmpty }
     private var sendable: Bool { model.canSend && chat.canSend && chat.cooldownAllowsSend(photos: !model.photos.isEmpty) }
 
-    init(chat: ChatModel) { self.chat = chat; self.model = chat.composer }
+    init(chat: ChatModel, onFocus: @escaping () -> Void = {}) { self.chat = chat; self.onFocus = onFocus; self.model = chat.composer }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -114,6 +117,8 @@ internal struct Composer: View {
                 .font(Theme.textFont(size: Theme.bodySize, scaledSize: sizes.textSize)).lineLimit(1...Theme.composerLineLimit)
                 .frame(minHeight: sizes.innerHeight)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fieldHeight = $0 }
+                .focused($focused)
+                .onChange(of: focused) { _, isFocused in if isFocused { onFocus() } }
             if hasContent {
                 Button { model.send(to: chat) } label: {
                     Image(systemName: "arrow.up").font(.system(size: sizes.sendIcon, weight: .bold))
