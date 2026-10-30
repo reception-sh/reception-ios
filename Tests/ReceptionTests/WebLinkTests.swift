@@ -7,27 +7,26 @@ final class WebLinkTests: XCTestCase {
     private var session: DeviceSession!
     private var chat: ChatModel!
     private var steps: [String] = []
-    private var previous: (DeviceSession?, (@MainActor (URL) -> Bool)?, Bool) = (nil, nil, true)
+    private var previous: (DeviceSession?, Bool) = (nil, true)
 
     override func setUp() async throws {
         let reception = Reception.shared
-        previous = (reception.session, reception.onLink, reception.opensWebLinksInApp)
+        previous = (reception.session, reception.opensWebLinksInApp)
         let store = DeviceStore(scope: UUID().uuidString, credentialStorage: .init(read: { _ in .missing }, save: { _, _ in true }, delete: { _ in true }))
         session = DeviceSession(api: ReceptionAPI(appId: "app_abcdefghijklmnopqrstuv", baseURL: try XCTUnwrap(URL(string: "https://example.invalid"))), store: store)
         reception.session = session
-        reception.onLink = nil
         reception.opensWebLinksInApp = true
         chat = ChatModel(session: session)
         chat.closePresentedChat = { [unowned self] next in steps.append("close"); next() }
         chat.presentWebLink = { [unowned self] _ in steps.append("safari"); return true }
         chat.openExternal = { [unowned self] _, completion in steps.append("system"); completion(true) }
+        chat.openInClaimingApp = { _, completion in completion(false) }
     }
 
     override func tearDown() async throws {
         session.invalidate()
         Reception.shared.session = previous.0
-        Reception.shared.onLink = previous.1
-        Reception.shared.opensWebLinksInApp = previous.2
+        Reception.shared.opensWebLinksInApp = previous.1
     }
 
     func testWebLinkClassification() throws {
@@ -51,6 +50,37 @@ final class WebLinkTests: XCTestCase {
         XCTAssertEqual(session.store.actionClickOutcomes, ["web": "opened"])
     }
 
+    func testWebLinkOpensInTheAppThatClaimsIt() throws {
+        var asked: [URL] = []
+        chat.openInClaimingApp = { [unowned self] url, completion in asked.append(url); steps.append("app"); completion(true) }
+        let url = try XCTUnwrap(URL(string: "https://wa.me/?text=Hi"))
+        chat.openLink(url, messageId: "web")
+        XCTAssertEqual(asked, [url])
+        XCTAssertEqual(steps, ["app"], "neither Safari nor a second system open")
+        XCTAssertEqual(session.store.actionClickOutcomes, ["web": "opened"])
+    }
+
+    func testUnclaimedWebLinkFallsBackToSafari() throws {
+        chat.openInClaimingApp = { [unowned self] _, completion in steps.append("app"); completion(false) }
+        chat.openLink(try XCTUnwrap(URL(string: "https://example.com/help")), messageId: "web")
+        XCTAssertEqual(steps, ["app", "safari"])
+        XCTAssertEqual(session.store.actionClickOutcomes, ["web": "opened"])
+    }
+
+    func testTextLinkOpensInTheAppThatClaimsIt() throws {
+        chat.openInClaimingApp = { [unowned self] _, completion in steps.append("app"); completion(true) }
+        assertResult(chat.openTextLink(try XCTUnwrap(URL(string: "https://wa.me/?text=Hi"))), .handled)
+        XCTAssertEqual(steps, ["app"])
+    }
+
+    func testClaimingAppIsNotAskedWhenTheSettingIsOff() async throws {
+        Reception.shared.opensWebLinksInApp = false
+        chat.openInClaimingApp = { [unowned self] _, completion in steps.append("app"); completion(true) }
+        chat.openLink(try XCTUnwrap(URL(string: "https://wa.me/?text=Hi")), messageId: "web")
+        await waitUntil { self.session.store.actionClickOutcomes["web"] != nil }
+        XCTAssertEqual(steps, ["system"], "the system open already prefers the claiming app")
+    }
+
     func testWebLinkGoesToTheSystemWhenTheSettingIsOff() async throws {
         Reception.shared.opensWebLinksInApp = false
         chat.openLink(try XCTUnwrap(URL(string: "https://example.com/help")), messageId: "web")
@@ -67,13 +97,6 @@ final class WebLinkTests: XCTestCase {
         XCTAssertEqual(session.store.actionClickOutcomes, ["web": "opened"])
     }
 
-    func testDeclinedWebLinkOpensInSafariAfterTheChatClosed() throws {
-        Reception.shared.onLink = { [unowned self] _ in steps.append("handler"); return false }
-        chat.openLink(try XCTUnwrap(URL(string: "https://example.com/help")), messageId: "web")
-        XCTAssertEqual(steps, ["close", "handler", "safari"])
-        XCTAssertEqual(session.store.actionClickOutcomes, ["web": "opened"])
-    }
-
     func testAppStoreLinkStaysWithTheSystem() async throws {
         chat.openLink(try XCTUnwrap(URL(string: "https://apps.apple.com/redeem?ctx=offercodes&id=1&code=SAVE")), messageId: "store")
         await waitUntil { self.session.store.actionClickOutcomes["store"] != nil }
@@ -86,11 +109,11 @@ final class WebLinkTests: XCTestCase {
         assertResult(chat.openTextLink(try XCTUnwrap(URL(string: "https://apps.apple.com/app/id1"))), .systemAction)
         Reception.shared.opensWebLinksInApp = false
         assertResult(chat.openTextLink(try XCTUnwrap(URL(string: "https://example.com"))), .systemAction)
-        chat.presentWebLink = { _ in false }
+        chat.presentWebLink = { [unowned self] _ in steps.append("no screen"); return false }
         Reception.shared.opensWebLinksInApp = true
-        assertResult(chat.openTextLink(try XCTUnwrap(URL(string: "https://example.com"))), .systemAction)
-        XCTAssertEqual(steps, ["safari"], "text links never reach openExternal")
-        XCTAssertTrue(session.store.actionClickOutcomes.isEmpty)
+        assertResult(chat.openTextLink(try XCTUnwrap(URL(string: "https://example.com"))), .handled)
+        XCTAssertEqual(steps, ["safari", "no screen", "system"], "without a screen the system opens the page")
+        XCTAssertTrue(session.store.actionClickOutcomes.isEmpty, "text links leave no receipt")
     }
 
     /// `OpenURLAction.Result` is not `Equatable`; its description tells the cases apart.

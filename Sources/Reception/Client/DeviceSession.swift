@@ -25,7 +25,7 @@ internal final class DeviceSession {
     var synchronizedLanguage: String?
     var synchronizedAppBadge: Bool?
     var synchronizedSubscribed: Bool?
-    var synchronizedHandlesLinks: Bool?
+    var synchronizedScreens: [[String: String]]?
     private(set) var invalidated = false
     enum HaltReason { case appUnavailable, blocked }
     private(set) var halt: HaltReason?
@@ -73,7 +73,7 @@ internal final class DeviceSession {
                 let badge = Reception.shared.updatesAppBadge
                 let paywalls = Reception.shared.availablePaywalls
                 let subscribed = Reception.shared.paidAccess.current
-                let handlesLinks = Reception.shared.onLink != nil
+                let screens = ScreenLink.report(Reception.shared.screens)
                 let identityToken = withoutIdentityToken ? nil : unsentIdentityToken
                 let response: Response
                 do {
@@ -96,7 +96,7 @@ internal final class DeviceSession {
                 synchronizedLanguage = language
                 synchronizedAppBadge = badge
                 synchronizedSubscribed = subscribed
-                synchronizedHandlesLinks = handlesLinks
+                synchronizedScreens = screens
                 // Preference changes during a request must follow its older values.
             } while resend || preferencesNeedSync || sentGeneration != updateGeneration
         }
@@ -122,7 +122,7 @@ internal final class DeviceSession {
     var preferencesNeedSync: Bool {
         synchronizedPaywalls != Reception.shared.availablePaywalls || synchronizedLanguage != ReceptionLocalization.appLanguage
             || synchronizedAppBadge != Reception.shared.updatesAppBadge || synchronizedSubscribed != Reception.shared.paidAccess.current
-            || synchronizedHandlesLinks != (Reception.shared.onLink != nil)
+            || synchronizedScreens != ScreenLink.report(Reception.shared.screens)
     }
 
     private func retryPreferencesIfNeeded() {

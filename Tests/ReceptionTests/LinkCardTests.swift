@@ -8,24 +8,24 @@ final class LinkCardTests: XCTestCase {
     private var chat: ChatModel!
     private var closes = 0
     private var events = 0
-    private var previous: (DeviceSession?, (@MainActor (URL) -> Bool)?, ((ReceptionEvent) -> Void)?)
+    private var previous: (DeviceSession?, ((ReceptionEvent) -> Void)?)
 
     override func setUp() async throws {
         let reception = Reception.shared
-        previous = (reception.session, reception.onLink, reception.onEvent)
+        previous = (reception.session, reception.onEvent)
         let store = DeviceStore(scope: UUID().uuidString, credentialStorage: .init(read: { _ in .missing }, save: { _, _ in true }, delete: { _ in true }))
         session = DeviceSession(api: ReceptionAPI(appId: "app_abcdefghijklmnopqrstuv", baseURL: try XCTUnwrap(URL(string: "https://example.invalid"))), store: store)
         reception.session = session
         reception.onEvent = { [unowned self] in if case .linkOpened = $0 { events += 1 } }
         chat = ChatModel(session: session)
         chat.closePresentedChat = { [unowned self] next in closes += 1; next() }
+        chat.openInClaimingApp = { _, completion in completion(false) }
     }
 
     override func tearDown() async throws {
         session.invalidate()
         Reception.shared.session = previous.0
-        Reception.shared.onLink = previous.1
-        Reception.shared.onEvent = previous.2
+        Reception.shared.onEvent = previous.1
     }
 
     func testDecodingKeepsTheMessageWhenTheLinkIsUnusable() throws {
@@ -59,43 +59,10 @@ final class LinkCardTests: XCTestCase {
         XCTAssertTrue(LinkPolicy(infoDictionary: nil).hostSchemes.isEmpty)
     }
 
-    func testHandledLinkClosesTheChatFirst() throws {
-        var handled: [URL] = []
-        Reception.shared.onLink = { [unowned self] url in
-            XCTAssertEqual(closes, 1, "the chat closes before the handler runs")
-            handled.append(url)
-            return true
-        }
-        chat.openExternal = { _, _ in XCTFail("a handled link is not opened by the system") }
-        let url = try XCTUnwrap(URL(string: "exampleapp://plans"))
-        chat.openLink(url, messageId: "link")
-        XCTAssertEqual(handled, [url])
-        XCTAssertEqual(events, 1)
-        XCTAssertEqual(session.store.pendingActionClicks, ["link"])
-        XCTAssertEqual(session.store.actionClickOutcomes, ["link": "handled"])
-    }
-
-    func testDeclinedLinkOpensThroughTheSystem() async throws {
-        Reception.shared.onLink = { _ in false }
-        let url = try XCTUnwrap(URL(string: "https://example.com/help"))
-        var opened: [URL] = []
-        var accepts = true
-        chat.openExternal = { url, completion in opened.append(url); completion(accepts) }
-        chat.openLink(url, messageId: "accepted")
-        accepts = false
-        chat.openLink(url, messageId: "refused")
-        await waitUntil { self.session.store.actionClickOutcomes.count == 2 }
-        XCTAssertEqual(opened, [url, url])
-        XCTAssertEqual(closes, 2)
-        XCTAssertEqual(events, 2)
-        XCTAssertEqual(session.store.actionClickOutcomes, ["accepted": "opened", "refused": "failed"])
-    }
-
     func testHostSchemeWithoutHandlerClosesThenOpens() async throws {
         let main = LinkPolicy.main
         LinkPolicy.main = LinkPolicy(infoDictionary: ["CFBundleURLTypes": [["CFBundleURLSchemes": ["exampleapp"]]]])
         defer { LinkPolicy.main = main }
-        Reception.shared.onLink = nil
         var steps: [String] = []
         chat.closePresentedChat = { next in steps.append("close"); next() }
         chat.openExternal = { _, completion in steps.append("open"); completion(true) }
@@ -106,8 +73,7 @@ final class LinkCardTests: XCTestCase {
         XCTAssertEqual(session.store.actionClickOutcomes, ["deep": "opened"])
     }
 
-    func testWebLinkWithoutHandlerKeepsTheChatOpen() async throws {
-        Reception.shared.onLink = nil
+    func testWebLinkKeepsTheChatOpen() async throws {
         let url = try XCTUnwrap(URL(string: "https://apps.apple.com/redeem?ctx=offercodes&id=1&code=SAVE"))
         chat.openExternal = { _, completion in completion(true) }
         chat.openLink(url, messageId: "web")
@@ -122,10 +88,12 @@ final class LinkCardTests: XCTestCase {
 
     func testTapsDuringTheCloseAreIgnored() throws {
         var handled = 0
-        Reception.shared.onLink = { _ in handled += 1; return true }
+        let screens = Reception.shared.screens
+        defer { Reception.shared.screens = screens }
+        Reception.shared.screens = [ReceptionScreen("plans") { handled += 1 }]
         var finishClose: (() -> Void)?
         chat.closePresentedChat = { next in finishClose = next }
-        let url = try XCTUnwrap(URL(string: "exampleapp://plans"))
+        let url = try XCTUnwrap(URL(string: "reception-screen:plans"))
         chat.openLink(url, messageId: "first")
         chat.openLink(url, messageId: "second")
         try XCTUnwrap(finishClose)()

@@ -60,6 +60,11 @@ internal final class ChatModel {
     var openExternal: @MainActor (URL, @escaping @MainActor @Sendable (Bool) -> Void) -> Void = { url, completion in
         UIApplication.shared.open(url, options: [:], completionHandler: completion)
     }
+    /// Hands a web link to an installed app that claims it (WhatsApp, YouTube, ...) and reports whether one did.
+    /// Replaced in tests.
+    var openInClaimingApp: @MainActor (URL, @escaping @MainActor @Sendable (Bool) -> Void) -> Void = { url, completion in
+        UIApplication.shared.open(url, options: [.universalLinksOnly: true], completionHandler: completion)
+    }
     /// Shows a web link in Safari over the chat and reports whether a screen could present it. Replaced in tests.
     var presentWebLink: @MainActor (URL) -> Bool = { Reception.shared.presenter.presentWebPage($0) }
     /// A link tap is closing the chat; further link taps wait until it finished.

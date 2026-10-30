@@ -84,10 +84,10 @@ Run an example app in Debug against your test app (or a local backend, see above
 - A web link, from a card or tapped in message text, opens in a Safari sheet over the chat, and Done returns to the open chat; with `Reception.shared.opensWebLinksInApp = false` it opens through the system instead.
 - An App Store link (including an offer-code link) opens through the system and the chat stays open.
 - Register a URL scheme in the example's `Info.plist` (`CFBundleURLTypes`), send a link with that scheme, and verify that the chat closes before the app's URL handler receives it. The card shows a chevron instead of the outward arrow.
-- Set `Reception.shared.onLink` and verify that the chat closes before the handler runs; return `false` to check that the system then opens the link.
-- With `onLink` returning `false` for a custom scheme that no installed app handles, the dashboard shows the failed tap.
+- Add `Reception.shared.screens` to an example app, send a screen link from the dashboard's Screen tab, and verify that the chat closes before the screen's `open` runs; a screen that takes a value receives it.
+- A link to an app that isn't installed shows as a failed tap in the dashboard.
 
-Device POST/PATCH payloads include `urlSchemes` (lowercased, unique, in `Info.plist` order, the first 20) and `handlesLinks`. LINK receipts share `POST /v1/conversation/action-click` and add `outcome` (`handled`, `opened` or `failed`); queued outcomes are stored beside the receipt queue and retried with it. `http` and `https` addresses in message text are tappable and send nothing.
+Device POST/PATCH payloads include `screens` (`[{ id, value? }]`, valid IDs once each, the first 50). LINK receipts share `POST /v1/conversation/action-click` and add `outcome` (`handled`, `opened` or `failed`); queued outcomes are stored beside the receipt queue and retried with it. `http` and `https` addresses in message text are tappable and send nothing.
 
 ## Releases
 
