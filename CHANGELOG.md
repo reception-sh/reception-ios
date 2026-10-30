@@ -3,14 +3,15 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.7.0] — Unreleased
 
 ### Added
 
+- A small card in the chat asks for notification permission after the person's message, only when enabled in the dashboard and only while iOS has not asked yet. Continue shows the system prompt and registers for push when allowed; No thanks hides the card on this device for good, also after logout.
+- A one-line status under the person's latest message confirms that they'll get a notification when the team replies, once push works for the device. Hide it with `Reception.shared.appearance.hidesPushStatus` or in the dashboard.
 - Link cards: a message from your team can carry a button that opens a link, such as a website, another app's link, an App Store page or offer-code link, an email address, a phone number or your app's page in iOS Settings, with no code in your app. Links to your app's own URL schemes (from `CFBundleURLTypes` in `Info.plist`) close the chat and then open, so your app's URL handler receives them; other links open with the chat left open. A card whose URL is missing or not allowed shows as plain text.
 - `Reception.shared.screens` lists the places in your app that link cards can open, such as tabs, screens, sheets or the paywall, each a `ReceptionScreen` with an ID and the code that opens it; `ReceptionScreen("order", value: "Order number") { number in … }` takes a value from the link. No URL scheme or router is needed. Device registration and updates report the screen IDs (`screens`), so the dashboard offers them by name and sends a screen link only to app versions that list the screen. A screen link closes the chat, then runs the screen's code.
 - `ReceptionEvent.linkOpened` is emitted when someone taps a link card. Apps with an exhaustive `switch` over `ReceptionEvent` need to add this case.
-- Web addresses (`http` and `https`) in message text are tappable for both senders.
 - Web links from link cards and message text open in the installed app that claims them (for example WhatsApp for `wa.me`, YouTube, Instagram), as from Messages or Mail; otherwise in an in-app Safari sheet over the chat, so people return to the conversation with Done. App Store links still open the App Store. Set `Reception.shared.opensWebLinksInApp = false` to hand web links to the system (Safari or another app's universal link) instead.
 - A link card's receipt reports whether a screen opened, the system opened the link, or it could not be opened, so the dashboard can show a failed tap.
 - The chat keeps your place when you scroll up: opening a link, returning from another app or a new reply no longer jumps to the bottom. Replies that arrive while you're scrolled up show a "3 new messages" button above the composer that scrolls down to them.
@@ -18,6 +19,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Fixed
 
 - `ReceptionChatView()` stays open when pushed through a navigation path (`NavigationStack(path:)` with `navigationDestination(for:)`). Before, the chat closed right after the push, and the app could crash on the next change of that path.
+- The German Retry button reads “Erneut versuchen”, and deleting the person's data also clears the stored subscription states.
+
+## [1.6.0] — 2026-10-24
+
+### Changed
+
+- The device registers with Reception when the app launches or returns to the foreground, not only when the person first writes, so every install appears in the dashboard's Users page and the team can start a conversation. Nothing is sent before `configure`; registration carries the same device details as before.
+- A registered device checks for unread messages on launch and foreground even before the person has written, and a tapped notification counts as a conversation. A conversation the team started therefore loads in the chat, polls and badges like one the person started. Before, the app ignored the team's message until the person wrote first.
+
+### Fixed
+
+- Swiping down over the messages while typing now dismisses the keyboard instead of the whole chat sheet; the sheet can be swiped away again once the keyboard is gone.
+- On iOS 26 the messages fade out under the chat title instead of being cut off by a hard band, and messages show through the glass composer all the way to the bottom of the sheet.
+- Links in messages are tappable, a long press on a bubble offers Copy, a reply that arrives while the chat is open gives a light haptic, and bubbles and the send button animate with springs.
+- The chat moves like Messages: on iOS 18 and later the newest message stays pinned above the composer while the keyboard opens and closes, and new messages scroll in with an animation instead of a jump. iOS 17 scrolls into place once the keyboard has settled.
+- Device preferences (paywalls, language, badge setting) synchronize for a registered device that has not written yet.
 
 ## [1.5.0] — 2026-10-23
 

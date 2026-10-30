@@ -171,11 +171,11 @@ public final class Reception {
         shared.forgetIdentityToken()
         let api = ReceptionAPI(appId: appId)
         shared.appearanceConfiguration.configure(api: api, scope: appId)
-        var store = DeviceStore(scope: appId + DeviceStore.generation(for: appId))
+        var store = DeviceStore(scope: appId + DeviceStore.generation(for: appId), deviceScope: appId)
         if store.hasConversation, store.credentialsMissing {
             // Keychain items stay on their device, so a restored chat without its session is reset like logout.
             store.clear()
-            store = DeviceStore(scope: appId + DeviceStore.generation(for: appId, rotate: true))
+            store = DeviceStore(scope: appId + DeviceStore.generation(for: appId, rotate: true), deviceScope: appId)
             Log.info("Local chat reset, its session is not stored on this device")
         }
         shared.session = DeviceSession(api: api, store: store)
@@ -185,6 +185,7 @@ public final class Reception {
         shared.advancePresentationRevision()
         shared.logoutRevocations.resumed(api: api)
         shared.unreadMonitor.setActive(UIApplication.shared.applicationState == .active)
+        if UIApplication.shared.applicationState == .active { shared.session?.registerIfNeeded() }
         shared.applicationLifecycle.start()
         shared.refreshPaywalls()
         shared.checkSubscriptions()
@@ -246,6 +247,8 @@ public final class Reception {
             return false
         }
         Log.debug("Push payload recognized, conversation \(id)")
+        // The service wrote to this device, so the chat exists even if nobody here has written yet.
+        session?.store.hasConversation = true
         if openChat { self.openChat() }
         refreshUnread()
         return true
@@ -329,7 +332,8 @@ public final class Reception {
         chat?.stopPolling()
         chat = nil
         self.session = DeviceSession(api: session.api,
-            store: DeviceStore(scope: scope + DeviceStore.generation(for: scope, rotate: true)), halt: session.halt)
+            store: DeviceStore(scope: scope + DeviceStore.generation(for: scope, rotate: true), deviceScope: scope),
+            halt: session.halt)
         setUnread(0)
         revision += 1
         if dismissChat { advancePresentationRevision() }
@@ -438,7 +442,7 @@ public final class Reception {
 
     internal func refreshUnread(updateDevice: Bool = false, probe: Bool = false) {
         if updateDevice { cancelUnreadRefresh() }
-        guard session?.store.hasStartedChat == true, session?.halt == nil || probe, refreshTask == nil else { return }
+        guard session?.isRegistered == true, session?.halt == nil || probe, refreshTask == nil else { return }
         let id = UUID()
         refreshId = id
         refreshTask = Task {

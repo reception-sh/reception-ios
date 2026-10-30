@@ -48,6 +48,11 @@ internal struct ChatContent: View {
             guard !Task.isCancelled else { return }
             model.startPolling()
         }
+        .task(id: Reception.shared.applicationActive) {
+            // Separate from loading, so a slow request never delays the notification card or status line.
+            guard Reception.shared.applicationActive else { return }
+            await model.refreshNotificationAuthorization()
+        }
         .onDisappear {
             model.stopPolling()
             model.isVisible = false

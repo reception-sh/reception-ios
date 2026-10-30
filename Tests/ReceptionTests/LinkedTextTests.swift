@@ -2,24 +2,22 @@ import SwiftUI
 import XCTest
 @testable import Reception
 
-@MainActor
 final class LinkedTextTests: XCTestCase {
-    func testWebAddressesBecomeLinks() {
-        let text = "See https://example.com/help or http://example.org, and www.example.net."
-        XCTAssertEqual(links(in: text).map(\.0), ["https://example.com/help", "http://example.org", "www.example.net"])
-        XCTAssertEqual(links(in: text).map(\.1.scheme), ["https", "http", "http"])
-        XCTAssertEqual(String(LinkedText.attributed(text).characters), text)
+    func testWebAddressesBecomeLinksAndTheRestStaysPlain() {
+        let text = "Docs at https://reception.sh/docs or www.apple.com, nothing else."
+        let attributed = LinkedText.attributed(text, linkColor: .white)
+        XCTAssertEqual(links(in: attributed).map(\.0), ["https://reception.sh/docs", "www.apple.com"])
+        XCTAssertEqual(links(in: attributed).map(\.1.absoluteString), ["https://reception.sh/docs", "http://www.apple.com"])
+        XCTAssertEqual(String(attributed.characters), text, "Nothing is added or removed")
     }
 
     func testOtherSchemesStayPlainText() {
-        XCTAssertTrue(links(in: "Open exampleapp://plans or write to help@example.com, call tel:+15551234").isEmpty)
-        XCTAssertTrue(links(in: "No links here").isEmpty)
+        for text in ["Open exampleapp://plans or write to help@example.com, call tel:+15551234", "Just words, no address."] {
+            XCTAssertTrue(links(in: LinkedText.attributed(text, linkColor: .white)).isEmpty, text)
+        }
     }
 
-    private func links(in text: String) -> [(String, URL)] {
-        let attributed = LinkedText.attributed(text)
-        return attributed.runs.compactMap { run in
-            run[AttributeScopes.FoundationAttributes.LinkAttribute.self].map { (String(attributed[run.range].characters), $0) }
-        }
+    private func links(in attributed: AttributedString) -> [(String, URL)] {
+        attributed.runs.compactMap { run in run.link.map { (String(attributed[run.range].characters), $0) } }
     }
 }

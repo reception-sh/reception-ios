@@ -10,10 +10,11 @@ extension DeviceSession {
         return credentials
     }
 
-    /// The current access token. Without one in memory it refreshes; only a user's send or an automation event may register.
+    /// The current access token. Without one in memory it refreshes. A registered device may always ask; an unused one
+    /// registers only at launch or foreground, on the user's send or for an automation event.
     func token() async throws -> String {
         guard !invalidated else { throw ReceptionAPIError(code: "cancelled", status: 0) }
-        guard store.hasStartedChat || RequestContext.automation else {
+        guard isRegistered || store.hasStartedChat || RequestContext.automation || RequestContext.launch else {
             throw ReceptionAPIError(code: "chat_not_started", status: 0)
         }
         guard halt == nil || RequestContext.probe?.available == true else {
@@ -25,7 +26,9 @@ extension DeviceSession {
         if let registration { return try await registration.value }
         if try storedCredentials() != nil { return try await renewedToken(replacing: nil) }
         if RequestContext.probe != nil { registrationAllowed = true }
-        guard registrationAllowed || RequestContext.automation else { throw ReceptionAPIError(code: "chat_not_started", status: 0) }
+        guard registrationAllowed || RequestContext.automation || RequestContext.launch else {
+            throw ReceptionAPIError(code: "chat_not_started", status: 0)
+        }
         return try await register()
     }
 

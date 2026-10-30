@@ -36,6 +36,7 @@ internal enum HostAppearanceReport {
         if appearance.hidesTitle { visibility["title"] = false }
         if appearance.hidesWelcomeTitle { visibility["welcomeTitle"] = false }
         if appearance.hidesWelcomeText { visibility["welcomeText"] = false }
+        if appearance.hidesPushStatus { visibility["pushStatus"] = false }
         if appearance.welcomeIcon?.icon.isHidden == true { visibility["welcomeIcon"] = false }
         if !visibility.isEmpty { report["visibility"] = visibility }
         return report

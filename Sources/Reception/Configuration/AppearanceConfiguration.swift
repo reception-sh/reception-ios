@@ -4,6 +4,7 @@ import Observation
 @MainActor @Observable
 internal final class AppearanceConfiguration {
     private(set) var active: RemoteAppearance?
+    private(set) var activePushPrompt: PushPrompt?
     private var latest: AppearanceEnvelope?
     private var api: ReceptionAPI?
     private var cache: AppearanceCache?
@@ -19,7 +20,7 @@ internal final class AppearanceConfiguration {
         self.api = api
         cache = AppearanceCache(scope: scope)
         latest = cache?.load()
-        active = latest?.appearance
+        activate()
         etag = nil
         lastAttempt = nil
         retry = RetryState()
@@ -35,7 +36,10 @@ internal final class AppearanceConfiguration {
         retry.foreground()
     }
 
-    func activate() { active = latest?.appearance }
+    func activate() {
+        active = latest?.appearance
+        activePushPrompt = latest?.pushPrompt.flatMap(PushPrompt.init(rawValue:))
+    }
 
     func refreshWhileActive() async {
         while !Task.isCancelled {

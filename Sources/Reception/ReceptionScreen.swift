@@ -21,7 +21,7 @@ public struct ReceptionScreen {
     let open: @MainActor (String?) -> Void
 
     /// A screen that opens the same way every time.
-    public init(_ id: String, open: @escaping @MainActor () -> Void) {
+    @MainActor public init(_ id: String, open: @escaping @MainActor () -> Void) {
         self.id = id
         valueName = nil
         self.open = { _ in open() }
@@ -29,7 +29,7 @@ public struct ReceptionScreen {
 
     /// A screen that needs a value from the link, such as an order number. `value` names it for the team, and every
     /// link to this screen carries one.
-    public init(_ id: String, value: String, open: @escaping @MainActor (String) -> Void) {
+    @MainActor public init(_ id: String, value: String, open: @escaping @MainActor (String) -> Void) {
         self.id = id
         valueName = value
         self.open = { value in if let value { open(value) } }

@@ -1,7 +1,9 @@
 import Foundation
+import Observation
 
+/// Observable only for the values the chat shows directly; everything else is read on demand.
 @MainActor
-internal final class DeviceStore {
+internal final class DeviceStore: Observable {
     struct CredentialStorage {
         var read: (String) -> KeychainStore.ReadResult = { KeychainStore.read(account: $0) }
         var save: (String, String) -> Bool = { KeychainStore.save($0, account: $1) }
@@ -10,12 +12,16 @@ internal final class DeviceStore {
 
     private let defaults = UserDefaults(suiteName: "com.reception.sdk")
     private let scope: String
+    /// Values about this device rather than its session, kept across logout.
+    private let deviceScope: String
+    private let registrar = ObservationRegistrar()
     private let credentialStorage: CredentialStorage
     private var acceptsDrafts = true
     let chatCache: ChatCache
     let teamProfileCache: TeamProfileCache
-    init(scope: String, credentialStorage: CredentialStorage = CredentialStorage()) {
+    init(scope: String, deviceScope: String? = nil, credentialStorage: CredentialStorage = CredentialStorage()) {
         self.scope = scope
+        self.deviceScope = deviceScope ?? scope
         self.credentialStorage = credentialStorage
         chatCache = ChatCache(scope: scope)
         teamProfileCache = TeamProfileCache(scope: scope)
@@ -26,7 +32,7 @@ internal final class DeviceStore {
         set { defaults?.set(newValue, forKey: key("chatRevision")) }
     }
 
-    func renewed() -> DeviceStore { DeviceStore(scope: scope, credentialStorage: credentialStorage) }
+    func renewed() -> DeviceStore { DeviceStore(scope: scope, deviceScope: deviceScope, credentialStorage: credentialStorage) }
 
     func resetChat(revision: Int) {
         acceptsDrafts = false
@@ -59,8 +65,24 @@ internal final class DeviceStore {
     }
 
     var pushActive: Bool? {
-        get { defaults?.object(forKey: key("pushActive")) as? Bool }
-        set { defaults?.set(newValue, forKey: key("pushActive")) }
+        get {
+            registrar.access(self, keyPath: \.pushActive)
+            return defaults?.object(forKey: key("pushActive")) as? Bool
+        }
+        set { registrar.withMutation(of: self, keyPath: \.pushActive) { defaults?.set(newValue, forKey: key("pushActive")) } }
+    }
+
+    /// "No thanks" on the notification card, for this device and App ID; logout and chat resets keep it.
+    var pushPromptDeclined: Bool {
+        get {
+            registrar.access(self, keyPath: \.pushPromptDeclined)
+            return defaults?.bool(forKey: deviceScope + ".pushPromptDeclined") ?? false
+        }
+        set {
+            registrar.withMutation(of: self, keyPath: \.pushPromptDeclined) {
+                defaults?.set(newValue, forKey: deviceScope + ".pushPromptDeclined")
+            }
+        }
     }
 
     var unreadPolling: [UnreadStage]? {
@@ -160,7 +182,7 @@ internal final class DeviceStore {
         teamProfileCache.clear()
         for name in ["chatRevision", "cursor", "pending", "draftText", "hasConversation", "hasStartedChat",
                      "conversationStatus", "lastMessageAt", "pushActive", "unreadPolling", "pendingActionClicks",
-                     "actionClickOutcomes", "cooldowns", "lastLimitCheck"] { defaults?.removeObject(forKey: key(name)) }
+                     "actionClickOutcomes", "cooldowns", "lastLimitCheck", "subscriptionStates"] { defaults?.removeObject(forKey: key(name)) }
     }
     static func generation(for scope: String, rotate: Bool = false) -> String {
         let defaults = UserDefaults(suiteName: "com.reception.sdk")

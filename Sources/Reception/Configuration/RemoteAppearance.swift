@@ -4,6 +4,8 @@ internal struct AppearanceEnvelope: Codable {
     let schemaVersion: Int
     let revision: Int
     let appearance: RemoteAppearance
+    /// Absent from older services and older cached envelopes.
+    let pushPrompt: String?
 }
 
 internal struct RemoteAppearance: Codable {
@@ -91,6 +93,7 @@ internal struct RemoteAppearance: Codable {
         result.hidesTitle = isHidden("title") ?? local.hidesTitle
         result.hidesWelcomeTitle = isHidden("welcomeTitle") ?? local.hidesWelcomeTitle
         result.hidesWelcomeText = isHidden("welcomeText") ?? local.hidesWelcomeText
+        result.hidesPushStatus = isHidden("pushStatus") ?? local.hidesPushStatus
         let hidesWelcomeIcon = isHidden("welcomeIcon")
         let localIcon = hidesWelcomeIcon == false && local.welcomeIcon?.icon.isHidden == true ? nil : local.welcomeIcon
         result.welcomeIcon = Self.icon(symbol: welcomeIcon?.symbol, image: welcomeIcon?.image, hidden: hidesWelcomeIcon)

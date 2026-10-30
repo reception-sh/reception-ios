@@ -132,6 +132,17 @@ final class AppearanceMergeTests: XCTestCase {
         XCTAssertNil(result.offerCard.accessory)
     }
 
+    func testPushStatusFollowsRemoteVisibility() throws {
+        XCTAssertFalse(try remote("{}").applying(to: localAppearance()).hidesPushStatus)
+        XCTAssertTrue(try remote(#"{"visibility":{"pushStatus":false}}"#).applying(to: localAppearance()).hidesPushStatus)
+        XCTAssertTrue(try remote(#"{"hidden":["pushStatus"]}"#).applying(to: localAppearance()).hidesPushStatus)
+        XCTAssertFalse(try remote(#"{"hidden":["pushStatus"],"visibility":{"pushStatus":true}}"#).applying(to: localAppearance()).hidesPushStatus)
+        var local = localAppearance()
+        local.hidesPushStatus = true
+        XCTAssertTrue(try remote("{}").applying(to: local).hidesPushStatus)
+        XCTAssertFalse(try remote(#"{"visibility":{"pushStatus":true}}"#).applying(to: local).hidesPushStatus)
+    }
+
     func testRemoteCloseSymbolOverridesHostImageOnlyWhenValid() throws {
         var local = localAppearance()
         local.closeImage = Image(systemName: "star")

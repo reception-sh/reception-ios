@@ -40,6 +40,8 @@ internal struct ConversationResponse: Decodable {
     let conversation: Conversation?
     let messages: [Message]
     let team: [TeamMember]?
+    /// Push eligibility of this device; older services omit it.
+    let push: Bool?
 }
 internal struct ConversationState: Decodable { let id: String?; let status: String }
 internal struct MessagesResponse: Decodable {

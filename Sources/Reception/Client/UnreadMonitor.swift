@@ -45,7 +45,7 @@ internal final class UnreadMonitor: NSObject {
                 notificationsAuthorized = false
             }
             authorizationTask = nil
-            guard Reception.shared.session?.store.hasStartedChat == true else { return }
+            guard Reception.shared.session?.isRegistered == true else { return }
             let blockedProbe = foreground && Reception.shared.session?.halt == .blocked
             Reception.shared.refreshUnread(updateDevice: !blockedProbe, probe: blockedProbe)
         }

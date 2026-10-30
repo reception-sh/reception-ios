@@ -124,10 +124,13 @@ internal struct MessageBubble: View {
 
     private var textBubble: some View {
         // Links keep the bubble's text color, underlined, so they stay readable on the accent color.
-        Text(LinkedText.attributed(message.text)).font(Theme.bodyFont)
+        Text(LinkedText.attributed(message.text, linkColor: textColor)).font(Theme.bodyFont)
             .foregroundStyle(textColor).tint(textColor)
             .padding(.horizontal, Theme.bubbleHorizontal).padding(.vertical, Theme.bubbleVertical)
             .background(message.sender == "USER" ? Theme.outgoingBackground(olderBy: olderOutgoingCount, in: environment) : Theme.secondary, in: BubbleShape())
             .environment(\.openURL, OpenURLAction(handler: openTextLink))
+            .contextMenu {
+                Button { UIPasteboard.general.string = message.text } label: { Label(Theme.string("Copy"), systemImage: "doc.on.doc") }
+            }
     }
 }
