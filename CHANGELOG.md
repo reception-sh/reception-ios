@@ -20,7 +20,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
-- The chat sheet closes only from its header: drag down from the grabber or the title bar, also while the keyboard is open. A drag over the messages scrolls them or puts the keyboard away and never closes the chat. Before, no drag could close the sheet while the keyboard was up.
+- The chat sheet can be closed while the keyboard is open: drag down from the grabber or the title bar. A drag over the messages then puts the keyboard away instead. With the keyboard closed, a drag anywhere closes the sheet, as before. Before, no drag could close the sheet while the keyboard was up.
 
 ### Fixed
 
