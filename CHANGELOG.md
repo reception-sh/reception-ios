@@ -3,6 +3,13 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A small card in the chat asks for notification permission after the person's message, only when enabled in the dashboard and only while iOS has not asked yet. Continue shows the system prompt and registers for push when allowed; No thanks hides the card on this device for good, also after logout.
+- A one-line status under the person's latest message confirms that they'll get a notification when the team replies, once push works for the device. Hide it with `Reception.shared.appearance.hidesPushStatus` or in the dashboard.
+
 ## [1.6.0] — 2026-10-24
 
 ### Changed

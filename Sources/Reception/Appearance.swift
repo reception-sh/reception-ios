@@ -62,6 +62,9 @@ extension Reception {
         public var hidesWelcomeTitle = false
         /// Defaults to false.
         public var hidesWelcomeText = false
+        /// Defaults to false. Hides the "You'll get a notification when we reply." line under the person's latest
+        /// message; the notification card is unaffected.
+        public var hidesPushStatus = false
 
         // Remote-only settings from the dashboard's published appearance.
         internal var showsTeamPhotos = false

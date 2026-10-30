@@ -13,6 +13,15 @@ internal struct ChatHistory: View {
                         ForEach(Array(model.messages.enumerated()), id: \.element.id) { index, message in
                             row(message, at: index, width: viewport.size.width)
                         }
+                        if model.pushPromptSlot != .none {
+                            PushPromptSlotView(slot: model.pushPromptSlot, decline: { model.declinePushPrompt() },
+                                               accept: { model.continuePushPrompt() })
+                                .padding(.top, Theme.groupSpacing)
+                                .padding(.bottom, model.isTyping ? Theme.zero : Theme.composerMessageGap)
+                                .id("push-prompt")
+                                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { _ in scrollRevision += 1 }
+                                .transition(.opacity)
+                        }
                         if model.isTyping {
                             TypingIndicator()
                                 .padding(.top, Theme.groupSpacing)
@@ -21,6 +30,7 @@ internal struct ChatHistory: View {
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
                     }
+                    .animation(Theme.messageAnimation, value: model.pushPromptSlot)
                     .padding(.horizontal, Theme.spacing)
                     .padding(.top, Theme.small)
                     .frame(minHeight: viewport.size.height, alignment: .bottom)
@@ -33,6 +43,7 @@ internal struct ChatHistory: View {
                 .scrollDismissesKeyboard(.interactively)
                 .withoutScrollEdgeEffects()
                 .onChange(of: model.isTyping) { scrollRevision += 1 }
+                .onChange(of: model.pushPromptSlot) { scrollRevision += 1 }
                 .onChange(of: model.messages.last?.id) { scrollRevision += 1 }
                 // A reply that lands while the chat is open taps the person lightly; the first load stays quiet.
                 .sensoryFeedback(.impact(weight: .light), trigger: model.messages.last(where: { $0.sender == "AGENT" })?.id) { previous, current in
@@ -49,7 +60,7 @@ internal struct ChatHistory: View {
                 .task(id: scrollRevision) {
                     // Geometry callbacks invalidate this task after the new rows/insets have laid out.
                     await Task.yield()
-                    guard !Task.isCancelled, let lastId = model.isTyping ? "support-typing" : model.messages.last?.id else { return }
+                    guard !Task.isCancelled, let lastId = bottomId else { return }
                     withAnimation(Theme.messageAnimation) { proxy.scrollTo(lastId, anchor: .bottom) }
                     do { try await Task.sleep(for: .seconds(Theme.layoutSettleDuration)) } catch { return }
                     guard !Task.isCancelled else { return }
@@ -104,6 +115,12 @@ internal struct ChatHistory: View {
             .first(where: \.isKeyWindow)?.safeAreaInsets.bottom ?? Theme.zero
     }
 
+    /// The lowest row, which scrolling keeps above the composer.
+    private var bottomId: String? {
+        if model.isTyping { return "support-typing" }
+        return model.pushPromptSlot == .none ? model.messages.last?.id : "push-prompt"
+    }
+
     private func row(_ message: Message, at index: Int, width: CGFloat) -> some View {
         let isLast = message.id == model.messages.last?.id
         return MessageRow(message: message, availableWidth: width, layout: model.messageLayout(at: index), openReview: { url, action in model.openReview(url, messageId: message.id, using: action) },
@@ -112,7 +129,7 @@ internal struct ChatHistory: View {
                           cancelRetry: { model.cancelAutomaticRetry(messageId: message.id) }) {
             model.retry(messageId: message.id)
         }
-        .padding(.bottom, isLast && !model.isTyping ? Theme.composerMessageGap : Theme.zero)
+        .padding(.bottom, isLast && !model.isTyping && model.pushPromptSlot == .none ? Theme.composerMessageGap : Theme.zero)
         .id(message.id)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { _ in
             if isLast { scrollRevision += 1 }

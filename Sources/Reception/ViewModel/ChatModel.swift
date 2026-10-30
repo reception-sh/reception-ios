@@ -1,6 +1,7 @@
 import SwiftUI
 import Observation
 import Network
+import UserNotifications
 
 @MainActor @Observable
 internal final class ChatModel {
@@ -28,6 +29,10 @@ internal final class ChatModel {
     var isVisible = false
     var isLoading = false
     var uploadProgress: Double?
+    /// Read when the chat appears and on every foreground; nil until the first read.
+    var notificationAuthorization: UNAuthorizationStatus?
+    /// Hides the notification card right after Continue, before the new authorization is read.
+    var pushPromptAnswered = false
     let session: DeviceSession?
     var polling: Task<Void, Never>?
     var streamID: UUID?

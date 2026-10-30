@@ -23,6 +23,7 @@ extension ChatModel {
             guard current, !Task.isCancelled else { return }
             guard generation == Reception.shared.readGeneration else { reloadAfterStaleGet(); return }
             session.store.hasConversation = response.conversation != nil
+            if let push = response.push { session.store.pushActive = push }
             if let device = response.device { updateSendingPermission(device, revision: permissionRevision) }
             let incomingSequences = Set(response.messages.compactMap(\.seq))
             messages.removeAll { message in

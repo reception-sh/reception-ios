@@ -161,11 +161,11 @@ public final class Reception {
         shared.forgetIdentityToken()
         let api = ReceptionAPI(appId: appId)
         shared.appearanceConfiguration.configure(api: api, scope: appId)
-        var store = DeviceStore(scope: appId + DeviceStore.generation(for: appId))
+        var store = DeviceStore(scope: appId + DeviceStore.generation(for: appId), deviceScope: appId)
         if store.hasConversation, store.credentialsMissing {
             // Keychain items stay on their device, so a restored chat without its session is reset like logout.
             store.clear()
-            store = DeviceStore(scope: appId + DeviceStore.generation(for: appId, rotate: true))
+            store = DeviceStore(scope: appId + DeviceStore.generation(for: appId, rotate: true), deviceScope: appId)
             Log.info("Local chat reset, its session is not stored on this device")
         }
         shared.session = DeviceSession(api: api, store: store)
@@ -322,7 +322,8 @@ public final class Reception {
         chat?.stopPolling()
         chat = nil
         self.session = DeviceSession(api: session.api,
-            store: DeviceStore(scope: scope + DeviceStore.generation(for: scope, rotate: true)), halt: session.halt)
+            store: DeviceStore(scope: scope + DeviceStore.generation(for: scope, rotate: true), deviceScope: scope),
+            halt: session.halt)
         setUnread(0)
         revision += 1
         if dismissChat { advancePresentationRevision() }

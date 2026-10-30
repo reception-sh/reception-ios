@@ -132,6 +132,11 @@ internal enum Theme {
     static let imageBorderWidth: CGFloat = 0.5
     static let imagePlaceholder = Color(uiColor: .secondarySystemFill)
     static let chip: CGFloat = 56
+    static let pushPromptSpacing: CGFloat = 4
+    static let pushPromptVertical: CGFloat = 4
+    static let pushPromptButtonSpacing: CGFloat = 28
+    /// Text buttons keep a usable tap height without looking like filled buttons.
+    static let pushPromptButtonHeight: CGFloat = 32
     @MainActor static var background: Color { Reception.resolvedAppearance.chatBackground ?? Color(uiColor: .systemBackground) }
     @MainActor static var secondary: Color { Reception.resolvedAppearance.incomingBackground ?? Color(uiColor: .secondarySystemBackground) }
 

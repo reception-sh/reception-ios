@@ -25,6 +25,7 @@ final class HostAppearanceReportTests: XCTestCase {
         appearance.welcomeIconSize = 59.6
         appearance.welcomeIconOffset = CGSize(width: 0, height: -10)
         appearance.hidesWelcomeText = true
+        appearance.hidesPushStatus = true
 
         let report = HostAppearanceReport.payload(appearance, usesRemoteAppearance: false)
 
@@ -35,7 +36,7 @@ final class HostAppearanceReportTests: XCTestCase {
             "text": ["title": "Help"], "colorScheme": "dark", "closeIcon": "chevron.down", "closeImage": true,
             "fontDesign": "rounded", "fontFamily": "AvenirNext-Bold", "fadesOlderMessages": false,
             "welcomeIcon": ["symbol": "sparkles", "size": 60, "offset": ["x": 0, "y": -10]],
-            "visibility": ["welcomeText": false],
+            "visibility": ["welcomeText": false, "pushStatus": false],
         ])
     }
 

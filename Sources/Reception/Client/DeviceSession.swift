@@ -60,7 +60,7 @@ internal final class DeviceSession {
         if let updateTask { return try await updateTask.value }
         let task = Task {
             defer { updateTask = nil }
-            struct Response: Decodable { let verifiedUserId: String? }
+            struct Response: Decodable { let verifiedUserId: String?; let push: Bool? }
             var sentGeneration: Int
             var withoutIdentityToken = false
             var resend = false
@@ -90,6 +90,7 @@ internal final class DeviceSession {
                 try Task.checkCancellation()
                 guard !invalidated else { throw ReceptionAPIError(code: "cancelled", status: 0) }
                 storeVerifiedUserId(response.verifiedUserId)
+                if let push = response.push { store.pushActive = push }
                 if let identityToken { Reception.shared.identityTokenSent(identityToken) }
                 synchronizedPaywalls = paywalls
                 synchronizedLanguage = language
