@@ -114,6 +114,20 @@ internal enum Theme {
     // iOS 26 reserves a 20-pt toolbar margin; align the circle to our 16-pt edge.
     static let toolbarGlassCorrection: CGFloat = 4
     static let dismissFill = Color(uiColor: .secondarySystemFill)
+    static let jumpToLatestHeight: CGFloat = 36
+    static let jumpToLatestTarget: CGFloat = 44
+    static let jumpToLatestIcon: CGFloat = 13
+    static let jumpToLatestMaximumScale: CGFloat = 1.5
+    static let jumpToLatestHorizontal: CGFloat = 14
+    static let jumpToLatestLabelSpacing: CGFloat = 6
+    static let jumpToLatestGap: CGFloat = 12
+    static let jumpToLatestRise: CGFloat = 12
+    static let jumpToLatestShadow = Color.black.opacity(0.06)
+    static let jumpToLatestShadowRadius: CGFloat = 3
+    static let jumpToLatestShadowY: CGFloat = 1
+    static let jumpToLatestCountLimit = 99
+    static let jumpToLatestScrollDuration = 0.35
+    static let jumpToLatestScrollAnimation = Animation.easeInOut(duration: jumpToLatestScrollDuration)
     static let minimumZoom: CGFloat = 1
     static let maximumZoom: CGFloat = 5
     static let doubleTapZoom: CGFloat = 3

@@ -28,6 +28,7 @@ extension Theme {
     @MainActor static var captionFont: Font { styledFont(.caption, size: 12) }
     @MainActor static var timestampFont: Font { styledFont(.caption2, size: 11) }
     @MainActor static var footnoteFont: Font { styledFont(.footnote, size: 13) }
+    @MainActor static var subheadlineFont: Font { styledFont(.subheadline, size: 15) }
     @MainActor static var dismissFont: Font {
         guard let family = Reception.resolvedAppearance.fontFamily else { return .system(size: 15, weight: .semibold) }
         return .custom(family, size: 15, relativeTo: .subheadline).weight(.semibold)
