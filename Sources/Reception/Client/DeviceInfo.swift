@@ -31,6 +31,7 @@ internal enum DeviceInfo {
         body["updatesAppBadge"] = Reception.shared.updatesAppBadge
         body["screens"] = ScreenLink.report(Reception.shared.screens)
         if let subscribed = Reception.shared.paidAccess.current { body["subscribed"] = subscribed }
+        if let transactionIds = Reception.shared.paidAccess.transactionIds { body["transactionIds"] = transactionIds }
         body["appearance"] = HostAppearanceReport.payload(Reception.shared.appearance,
                                                           usesRemoteAppearance: Reception.shared.usesRemoteAppearance)
         if let identityToken { body["identityToken"] = identityToken }

@@ -74,6 +74,7 @@ final class ScreenLinkTests: XCTestCase {
         session.synchronizedLanguage = ReceptionLocalization.appLanguage
         session.synchronizedAppBadge = reception.updatesAppBadge
         session.synchronizedSubscribed = reception.paidAccess.current
+        session.synchronizedTransactionIds = reception.paidAccess.transactionIds
         session.synchronizedScreens = reported
         XCTAssertFalse(session.preferencesNeedSync)
         reception.screens = [ReceptionScreen("settings") {}]
