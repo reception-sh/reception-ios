@@ -67,6 +67,7 @@ final class ScreenLinkTests: XCTestCase {
         let reported = try XCTUnwrap(body["screens"] as? [[String: String]])
         XCTAssertEqual(reported.count, ScreenLink.limit)
         XCTAssertEqual(Array(reported.prefix(3)), [["id": "settings"], ["id": "order", "value": "Order number"], ["id": "screen0"]])
+        XCTAssertEqual(body["capabilities"] as? [String], ["linkCards", "screens"], "the server gates cards on reported capabilities")
         XCTAssertNil(body["urlSchemes"], "links need no URL scheme report")
         XCTAssertNil(body["handlesLinks"])
 

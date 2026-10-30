@@ -30,6 +30,8 @@ internal enum DeviceInfo {
         body["metadata"] = identity.metadata
         body["updatesAppBadge"] = Reception.shared.updatesAppBadge
         body["screens"] = ScreenLink.report(Reception.shared.screens)
+        // What this SDK can show; the server gates link cards and screen links on these, not on the version.
+        body["capabilities"] = ["linkCards", "screens"]
         if let subscribed = Reception.shared.paidAccess.current { body["subscribed"] = subscribed }
         if let transactionIds = Reception.shared.paidAccess.transactionIds { body["transactionIds"] = transactionIds }
         body["appearance"] = HostAppearanceReport.payload(Reception.shared.appearance,
