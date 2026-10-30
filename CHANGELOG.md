@@ -18,6 +18,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A link card's receipt reports whether a screen opened, the system opened the link, or it could not be opened, so the dashboard can show a failed tap.
 - The chat keeps your place when you scroll up: opening a link, returning from another app or a new reply no longer jumps to the bottom. Replies that arrive while you're scrolled up show a "3 new messages" button above the composer that scrolls down to them.
 
+### Changed
+
+- The chat sheet closes only from its header: drag down from the grabber or the title bar, also while the keyboard is open. A drag over the messages scrolls them or puts the keyboard away and never closes the chat. Before, no drag could close the sheet while the keyboard was up.
+
 ### Fixed
 
 - `ReceptionChatView()` stays open when pushed through a navigation path (`NavigationStack(path:)` with `navigationDestination(for:)`). Before, the chat closed right after the push, and the app could crash on the next change of that path.

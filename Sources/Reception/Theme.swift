@@ -7,6 +7,8 @@ internal enum Theme {
     static let headerFadeHeight: CGFloat = 80
     static let headerFadeOverlap: CGFloat = 64
     static let sheetTopInset: CGFloat = 20
+    /// The band a drag may close the sheet from: the grabber inset and the title bar below it.
+    static let sheetHandleHeight: CGFloat = sheetTopInset + 44
     static let layoutSettleDuration = 0.25
     static let deliveryStatusAnimation = Animation.smooth(duration: 0.2)
     // Springs, like Messages: a bubble lands with a little give instead of easing to a stop.
