@@ -9,6 +9,8 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
     private var dismissing = false
     private var dismissalCompleted = false
     private var presentAfterDismiss = false
+    /// Runs once UIKit and SwiftUI both consider the chat gone, so `isChatOpen` is already false.
+    private var afterDismissal: (() -> Void)?
 
     override init() {
         super.init()
@@ -89,11 +91,11 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
         guard let controller = hostingController else { return false }
         dismissing = true
         dismissalCompleted = false
+        afterDismissal = completion
         controller.dismiss(animated: true) { [weak self] in
             guard let self else { return }
             self.dismissalCompleted = true
             self.finishDismissalIfReady()
-            completion?()
         }
         hostingController = nil
         Log.debug("Chat dismissed")
@@ -126,6 +128,9 @@ internal final class ChatPresenter: NSObject, UIAdaptivePresentationControllerDe
         // SwiftUI can clear chat visibility after UIKit's dismissal completion.
         guard dismissing, dismissalCompleted, !Reception.shared.isChatOpen else { return }
         dismissing = false
+        let next = afterDismissal
+        afterDismissal = nil
+        next?()
         if presentAfterDismiss {
             presentAfterDismiss = false
             present()
