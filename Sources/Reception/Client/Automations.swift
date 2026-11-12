@@ -65,7 +65,16 @@ internal final class Automations {
 
     private func received(_ result: Sent, event: String, session: DeviceSession) -> Delivery {
         Log.debug("Automation message received for \(event)")
+        // The service wrote to this device, so the conversation exists; older answers still on their way say otherwise.
+        let known = session.store.hasConversation
         session.store.hasStartedChat = true
+        session.store.hasConversation = true
+        // A chat already open without a conversation loads the message now, without waiting for an unread refresh that
+        // may be skipped behind an older one, and shows it like a reply, behind the team's typing dots.
+        if !known, let chat = Reception.shared.chat, chat.isChatActive {
+            openedChatAt = .now
+            chat.conversationStarted()
+        }
         Reception.shared.refreshUnread()
         return .received(openChat: result.openChat)
     }

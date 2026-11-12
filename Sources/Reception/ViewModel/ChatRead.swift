@@ -18,7 +18,10 @@ extension ChatModel {
             guard let self, !Task.isCancelled else { return }
             self.reloadTask = nil
             guard self.current, self.isVisible, UIApplication.shared.applicationState == .active else { return }
-            await self.load()
+            // An opening that waited behind the rejected GET hands its limits recheck to this load.
+            let recheck = self.loadAfterFetch ?? false
+            self.loadAfterFetch = nil
+            await self.load(recheckLimits: recheck)
         }
     }
 

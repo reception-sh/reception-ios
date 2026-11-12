@@ -247,8 +247,12 @@ public final class Reception {
             return false
         }
         Log.debug("Push payload recognized, conversation \(id)")
-        // The service wrote to this device, so the chat exists even if nobody here has written yet.
-        session?.store.hasConversation = true
+        // The service wrote to this device, so the chat exists even if nobody here has written yet; an open chat
+        // that knew of none loads and listens now.
+        if session?.store.hasConversation == false {
+            session?.store.hasConversation = true
+            chat?.conversationStarted()
+        }
         if openChat { self.openChat() }
         refreshUnread()
         return true
@@ -391,6 +395,7 @@ public final class Reception {
         unreadCount = max(0, count)
         AppBadge.sync(unreadCount)
     }
+    internal var isRefreshingUnread: Bool { refreshTask != nil }
     internal func cancelUnreadRefresh() {
         refreshTask?.cancel()
         refreshTask = nil

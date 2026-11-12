@@ -56,7 +56,15 @@ internal final class ChatModel {
     var maxSeq: Int64 = 0
     var readCursor: ReadCursor?
     var reloadTask: Task<Void, Never>?
+    /// Loads a conversation the open chat learned of, then listens (`conversationStarted`); ends with `stopPolling`.
+    var conversationStart: Task<Void, Never>?
     var pollDeferred = false
+    /// A stream signal found another GET running, whose answer may predate it; it polls once that GET ends.
+    var pollAfterFetch = false
+    /// A load found another GET running; it runs once that GET ends, with the limits recheck when true.
+    var loadAfterFetch: Bool?
+    /// That poll or load; it ends with the chat's activation (`stopPolling`), or its request would hold `loading` past a close.
+    var followUp: Task<Void, Never>?
     /// Closes the chat the SDK presented, then continues; a host-embedded chat continues at once. Replaced in tests.
     var closePresentedChat: (@escaping () -> Void) -> Void = { next in
         if !Reception.shared.presenter.dismiss(completion: next) { next() }
@@ -121,14 +129,19 @@ internal final class ChatModel {
         startStream()
         for message in messages where message.status == .sending { submit(message.id) }
         startMonitoring()
+        // The stream is expected from now on: a link that does not come up shows after its grace.
+        refreshConnection()
         retryFailedAutomatically()
     }
     func stopPolling() {
         isChatActive = false
         reloadTask?.cancel(); reloadTask = nil
+        conversationStart?.cancel(); conversationStart = nil
         if current { Reception.shared.invalidateRead() }
         sendTyping(false)
         cancelStream()
+        pollAfterFetch = false; loadAfterFetch = nil
+        followUp?.cancel(); followUp = nil
         setTyping(false)
         linkGrace?.cancel(); linkGrace = nil
         pathTask?.cancel(); pathTask = nil
@@ -142,11 +155,13 @@ internal final class ChatModel {
     func poll() async {
         guard let session, current, isChatActive, !Task.isCancelled,
               UIApplication.shared.applicationState == .active,
-              session.store.hasStartedChat, session.halt == nil, session.retries["poll"]?.stopped != true, !loading else { return }
+              session.store.hasStartedChat, session.halt == nil, session.retries["poll"]?.stopped != true else { return }
+        // A stream signal during the load or another poll would be lost: that GET may have been answered before it.
+        guard !loading else { pollAfterFetch = true; return }
         // A request wait must not hold the stream reader; cooldownsChanged polls once it ends.
         guard session.cooldowns.blocking([.requests]) == nil else { pollDeferred = true; return }
         loading = true
-        defer { loading = false }
+        defer { fetched() }
         do {
             if let delay = session.retries["poll"]?.delay { try await Task.sleep(for: delay) }
             // Pages follow while the service reports more; each one is merged and read like a single poll.
@@ -180,7 +195,6 @@ internal final class ChatModel {
     func refreshUnread(updateDevice: Bool = false, probe: Bool = false) async {
         guard let session, current, session.halt == nil || probe, session.isRegistered,
               probe || session.retries["unread"]?.stopped != true else { return }
-        let started = session.store.hasStartedChat
         defer { if current, !Task.isCancelled { Reception.shared.unreadMonitor.reschedule() } }
         do {
             if !probe, let delay = session.retries["unread"]?.delay { try await Task.sleep(for: delay) }
@@ -194,13 +208,16 @@ internal final class ChatModel {
                 let unreadPolling: [UnreadStage]?
             }
             let generation = Reception.shared.readGeneration
+            let knewConversation = session.store.hasConversation
             let response: Response = try await RequestContext.$probe.withValue(probe ? RequestProbe() : nil) {
                 try await session.api.request("conversation/unread", authenticated: true)
             }
             session.retries["unread"] = nil
             if probe { sendingDisabled = false }
             guard current, !Task.isCancelled else { return }
-            session.store.hasConversation = response.hasConversation
+            let found = response.hasConversation && !session.store.hasConversation
+            // The device learned otherwise while the answer was on its way (its first send, a push, a load): that is newer.
+            if session.store.hasConversation == knewConversation { session.store.hasConversation = response.hasConversation }
             session.store.conversationStatus = response.status
             session.store.lastMessageAt = response.lastMessageAt
             session.store.pushActive = response.push
@@ -210,11 +227,8 @@ internal final class ChatModel {
                 Reception.shared.setUnread(response.unreadCount)
             }
             Log.debug("Unread refresh, \(response.unreadCount) unread")
-            // The team wrote first: a chat that is already open starts loading and listening now.
-            if !started, response.hasConversation, isChatActive {
-                startPolling()
-                Task { await load() }
-            }
+            // The team or an automation wrote first: a chat that is already open loads and listens now.
+            if found { conversationStarted() }
         } catch {
             if let error = error as? ReceptionAPIError, error.code != "cancelled", error.code != "session_halted", !error.isCooldown {
                 if probe && error.status == 403 && error.code == "blocked" {

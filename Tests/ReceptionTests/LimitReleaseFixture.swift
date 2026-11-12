@@ -43,7 +43,7 @@ final class LimitReleaseFixture {
     let session: DeviceSession
     let chat: ChatModel
 
-    init() throws {
+    init(appId: String = "app_abcdefghijklmnopqrstuv") throws {
         let reception = Reception.shared
         reception.usesRemoteAppearance = false
         reception.applicationActive = true
@@ -52,7 +52,7 @@ final class LimitReleaseFixture {
         let store = DeviceStore(scope: "release-" + UUID().uuidString, credentialStorage: .init(
             read: { _ in .missing }, save: { _, _ in true }, delete: { _ in true }))
         store.hasStartedChat = true
-        let api = ReceptionAPI(appId: "app_abcdefghijklmnopqrstuv", baseURL: try XCTUnwrap(URL(string: "https://reception.test")))
+        let api = ReceptionAPI(appId: appId, baseURL: try XCTUnwrap(URL(string: "https://reception.test")))
         session = DeviceSession(api: api, store: store, now: { [time] in time.now })
         session.credentials = SessionCredentials(sessionSecret: "secret", verifiedUserId: nil)
         session.accessToken = "access"

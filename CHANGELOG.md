@@ -3,6 +3,17 @@
 All notable changes to the Reception iOS SDK are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- An automation's message appears right away in a chat that is already open, behind the team's typing dots, and the chat receives replies live from then on.
+- A chat that was open before its conversation existed loads it and receives replies live once a notification or an unread check reports the conversation.
+- Replies signalled while the chat reloads its conversation are fetched right after the reload.
+- A message that arrives at the moment the chat is closed, sent to the background or reopened shows the next time the chat is open, and a chat reopened right after closing loads its conversation.
+- The live connection backs off when it is asked to reconnect right after opening, instead of reconnecting at once.
+- "Connecting…" no longer shows while a chat that an automation opened is still loading. A missing network still shows "No connection" at once.
+
 ## [1.7.0] — 2026-10-31
 
 ### Added

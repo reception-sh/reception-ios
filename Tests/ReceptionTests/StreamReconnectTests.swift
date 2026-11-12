@@ -8,6 +8,7 @@ final class StreamReconnectTests: XCTestCase {
     private nonisolated static let messages = #"{"conversation":\#(LimitReleaseFixture.Script.conversation),"messages":[],"boundedRead":true}"#
     private nonisolated static let dropped = StubURLProtocol.Reply(body: "retry: 2000\n\n: ping\n\n", failAfterData: .networkConnectionLost)
     private nonisolated static let open = StubURLProtocol.Reply(body: "retry: 2000\n\n", holdOpen: true)
+    private nonisolated static let reconnect = StubURLProtocol.Reply(body: "retry: 2000\n\ndata: reconnect\n\n")
 
     private func fixture(events: @escaping @Sendable (Int) -> StubURLProtocol.Reply) throws -> LimitReleaseFixture {
         let f = try LimitReleaseFixture()
@@ -82,5 +83,22 @@ final class StreamReconnectTests: XCTestCase {
         XCTAssertEqual(f.session.retries["stream"]?.stopped, true)
         f.chat.startPolling()
         try await f.waitUntil { self.streamRequests() == 1 && f.chat.streamConnected }
+    }
+
+    func testAStreamAskedToReconnectRightAfterOpeningBacksOff() async throws {
+        let f = try fixture { _ in Self.reconnect }
+        defer { finish(f) }
+        f.chat.startPolling()
+        try await f.waitUntil { f.session.retries["stream"]?.attempts == 1 }
+        XCTAssertEqual(streamRequests(), 1, "The next stream waits for the backoff instead of opening at once")
+    }
+
+    func testAHealthyStreamReconnectsAtOnceWhenAsked() async throws {
+        let f = try fixture { $0 == 1 ? Self.reconnect : Self.open }
+        defer { finish(f) }
+        f.chat.healthyStreamDuration = .zero
+        f.chat.startPolling()
+        try await f.waitUntil { self.streamRequests() == 2 && f.chat.streamConnected }
+        XCTAssertNil(f.session.retries["stream"])
     }
 }

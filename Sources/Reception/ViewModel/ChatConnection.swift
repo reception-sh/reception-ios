@@ -70,6 +70,9 @@ extension ChatModel {
         }
         // Network is back but the link is not up yet: say so right away.
         if connection == .offline { setConnection(.connecting); return }
+        // The opening (load, an automation's revealed message) runs before the chat listens, so no link is down yet:
+        // the grace starts once it listens (`startPolling`), however long the opening took.
+        guard isChatActive else { return }
         // Link dropped while online: a one-second grace keeps blinks invisible.
         guard connection != .connecting, linkGrace == nil else { return }
         linkGrace = Task { [weak self] in
@@ -115,6 +118,7 @@ extension ChatModel {
 
     func suspendAutomaticRequests() {
         cancelStream()
+        followUp?.cancel(); followUp = nil
         linkGrace?.cancel(); linkGrace = nil
         if connection != .hidden { setConnection(.hidden) }
         cancelAutomaticRetry()

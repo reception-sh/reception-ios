@@ -51,7 +51,7 @@ extension ChatModel {
                         case "data: typing": self.setTyping(true)
                         case "data: idle": self.setTyping(false)
                         case "data: reconnect":
-                            // The service closes streams with their access token; the next one opens right away.
+                            // The service closes streams with their access token; the next one opens right away once healthy.
                             reconnect = true
                             break lines
                         default: continue
@@ -71,11 +71,14 @@ extension ChatModel {
                     }
                 }
                 guard !Task.isCancelled, self.current else { return }
-                if reconnect { continue }
+                // A stream that stayed up had recovered: its end starts afresh instead of adding to old failures.
+                let healthy = connected.map { $0.duration(to: .now) >= self.healthyStreamDuration } ?? false
+                if healthy { session.retries["stream"] = nil }
+                // The service rotates a healthy stream with "reconnect"; one asked to reconnect right after opening (a broken
+                // server or proxy) waits like a dropped one, or every open chat would reconnect in a busy loop.
+                if reconnect && healthy { continue }
                 self.streamDidDisconnect()
                 guard session.halt == nil else { return }
-                // A stream that stayed up had recovered: its drop starts a fresh backoff instead of adding to old failures.
-                if let connected, connected.duration(to: .now) >= self.healthyStreamDuration { session.retries["stream"] = nil }
                 session.retries["stream", default: RetryState()].failed(failure)
             }
         }
